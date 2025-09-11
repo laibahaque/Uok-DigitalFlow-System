@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@layer utilities {
+  /* Float Up-Down */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+  }
+
+  /* Swing Left-Right */
+  @keyframes swing {
+    0%, 100% { transform: rotate(-6deg); }
+    50% { transform: rotate(6deg); }
+  }
+
+  /* Subtle Bounce */
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* Fade In */
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* Fade In Up */
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Slow Pulse */
+  @keyframes pulseSlow {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.2); opacity: 0.5; }
+  }
+
+  /* Bounce Once */
+  @keyframes bounceOnce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  /* NEW: Slow Spin */
+  @keyframes spinSlow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* NEW: Tilt */
+  @keyframes tilt {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+
+  /* NEW: Pulse Fast */
+  @keyframes pulseFast {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  /* Apply Animations */
+  .animate-float-slow {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-float-fast {
+    animation: float 3s ease-in-out infinite;
+  }
+  .animate-rotate-slow {
+    animation: spinSlow 12s linear infinite;
+  }
+  .animate-swing {
+    animation: swing 5s ease-in-out infinite;
+  }
+  .animate-bounce-subtle {
+    animation: bounce-subtle 4s infinite;
+  }
+  .animate-fade-in {
+    animation: fadeIn 1s ease forwards;
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 1s ease forwards;
+  }
+  .animate-pulse-slow {
+    animation: pulseSlow 5s ease-in-out infinite;
+  }
+  .animate-pulse-fast {
+    animation: pulseFast 3s ease-in-out infinite;
+  }
+  .animate-bounce-once {
+    animation: bounceOnce 0.4s ease;
+  }
+  .animate-tilt {
+    animation: tilt 4s ease-in-out infinite;
+  }
+}

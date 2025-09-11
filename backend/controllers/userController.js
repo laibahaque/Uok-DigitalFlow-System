@@ -2,7 +2,6 @@ const db = require("../config/db");
 
 const getStudentInfo = async (req, res) => {
   const { id } = req.params;
-  console.log("🔍 Fetching student info for user.id =", id);
 
   try {
     const [rows] = await db.query(
@@ -13,7 +12,6 @@ const getStudentInfo = async (req, res) => {
       [id]
     );
 
-    console.log("✅ Query result:", rows);
 
     if (rows.length === 0) {
       console.log("⚠️ Student not found for user.id =", id);

@@ -97,3 +97,17 @@
     animation: tilt 4s ease-in-out infinite;
   }
 }
+@keyframes slideFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slideFadeIn {
+  animation: slideFadeIn 0.4s ease-out forwards;
+}

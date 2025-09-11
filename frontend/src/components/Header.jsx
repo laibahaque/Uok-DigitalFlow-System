@@ -1,4 +1,3 @@
-// frontend/components/Header.jsx
 import React, { useContext, useEffect, useState } from "react";
 import { Bell, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -7,18 +6,23 @@ import { AuthContext } from "../context/authContext";
 const Header = ({ notificationCount = 0 }) => {
   const { user, logout } = useContext(AuthContext);
   const [userData, setUserData] = useState(null);
-  const [open, setOpen] = useState(false);
+  const [openProfile, setOpenProfile] = useState(false);
+  const [openNotifications, setOpenNotifications] = useState(false);
   const navigate = useNavigate();
+
+  // Dummy notifications (tum API se fetch bhi kar sakti ho)
+  const notifications = [
+    { id: 1, message: "Your Proforma request has been approved ✅" },
+    { id: 2, message: "New notice from University ⚡" },
+    { id: 3, message: "Transcript request is under review ⏳" },
+  ];
 
   useEffect(() => {
     if (!user) return;
 
-    console.log("🟢 AuthContext user:", user); // Debug
-
     const fetchUserData = async () => {
       try {
         if (user.role === "student") {
-          // 🎓 API call to get student details
           const res = await fetch(
             `http://localhost:5000/api/users/student/${user.id}`,
             {
@@ -33,7 +37,6 @@ const Header = ({ notificationCount = 0 }) => {
           if (res.ok && data.name) {
             setUserData({ name: data.name });
           } else {
-            console.error("⚠️ Error fetching student info:", data.message);
             setUserData({ name: "Student" });
           }
         } else if (user.role === "uni_admin") {
@@ -58,30 +61,62 @@ const Header = ({ notificationCount = 0 }) => {
   };
 
   return (
-    <div className="flex justify-between items-center shadow-md px-6 py-4 bg-green-600 mb-6">
+    <div className="flex justify-between items-center shadow-md px-6 py-6 bg-green-600 mb-6 relative">
       <h2 className="text-xl font-semibold text-gray-100">
         {userData ? `Welcome, ${userData.name}` : "Welcome, User"}
       </h2>
 
       <div className="flex items-center gap-6 relative">
         {/* 🔔 Notifications */}
-        <button className="relative">
-          <Bell className="w-6 h-6 text-white" />
-          {notificationCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-              {notificationCount}
-            </span>
-          )}
-        </button>
-
-        {/* 👤 Profile */}
-        <div>
-          <button onClick={() => setOpen(!open)}>
-            <User className="w-7 h-7 text-white cursor-pointer " />
+        <div className="relative">
+          <button
+            onClick={() => {
+              setOpenNotifications(!openNotifications);
+              setOpenProfile(false);
+            }}
+            className="relative"
+          >
+            <Bell className="w-6 h-6 text-white" />
+            {notificationCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                {notificationCount}
+              </span>
+            )}
           </button>
 
-          {open && (
-            <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg">
+          {openNotifications && (
+            <div className="absolute right-0 mt-3 w-72 bg-white shadow-lg rounded-lg max-h-60 overflow-y-auto z-20">
+              {notifications.length > 0 ? (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="px-4 py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    {n.message}
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-3 text-gray-500 text-sm">
+                  No new notifications
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 👤 Profile */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setOpenProfile(!openProfile);
+              setOpenNotifications(false);
+            }}
+          >
+            <User className="w-7 h-7 text-white cursor-pointer" />
+          </button>
+
+          {openProfile && (
+            <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg z-20">
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full"

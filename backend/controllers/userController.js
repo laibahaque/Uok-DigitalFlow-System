@@ -15,7 +15,7 @@ const getStudentInfo = async (req, res) => {
 
     if (rows.length === 0) {
       console.log("⚠️ Student not found for user.id =", id);
-      return res.status(404).json({ message: "Student not found" });
+      return res.status(404).json({ message: "Student no found" });
     }
 
     res.json({ name: rows[0].name });

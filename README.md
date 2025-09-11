@@ -1,7 +1,7 @@
 # UoK DigitalFlow System
 
 ## 📌 Overview
-A digital system for University of Karachi to manage student and admin workflows.
+A digital system for University of Karachi to digitalize manual paper-based system.
 
 ## 🚀 Tech Stack
 - Frontend: React.js, Tailwind CSS, Context API

@@ -34,8 +34,8 @@ const Header = ({ notificationCount = 0 }) => {
 
           const data = await res.json();
 
-          if (res.ok && data.name) {
-            setUserData({ name: data.name });
+          if (res.ok && data.full_name) {
+            setUserData({ name: data.full_name });
           } else {
             setUserData({ name: "Student" });
           }

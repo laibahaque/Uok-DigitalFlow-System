@@ -1,8 +1,9 @@
-// backend/controllers/authController.js
-const db = require("../config/db");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { findBySeatAndDepartment } = require("../models/Student");
+const { createUser, findByEmail } = require("../models/User");
+const { hashPassword, comparePassword } = require("../utils/password");
 
+// 📌 Register Student
 const registerUser = async (req, res) => {
   const { seatNumber, email, department, password } = req.body;
 
@@ -11,71 +12,68 @@ const registerUser = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.query(
-      `SELECT * FROM students WHERE seat_no = ? 
-       AND depart_id = (SELECT id FROM departments_sci WHERE depart_name = ?)`,
-      [seatNumber, department]
-    );
-
-    if (rows.length === 0) {
+    // Student validate karo
+    const student = await findBySeatAndDepartment(seatNumber, department);
+    if (!student) {
       return res.status(400).json({ message: "Invalid seat number or department" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const studentId = rows[0].id;
+    const hashedPassword = await hashPassword(password);
 
-    await db.execute(
-      "INSERT INTO users (student_id, email, password, created_at) VALUES (?, ?, ?, NOW())",
-      [studentId, email, hashedPassword]
-    );
+    await createUser(student.id, email, hashedPassword);
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    console.error("Error in registerUser:", err);
+    console.error("❌ Error in registerUser:", err);
     res.status(500).json({ message: "Error registering user" });
   }
 };
 
+// 📌 Login (Student + Admin)
 const loginUser = async (req, res) => {
   const { email, password, userType } = req.body;
 
   try {
-    let query = "";
+    let table = "";
     if (userType === "student") {
-      query = "SELECT * FROM users WHERE email = ?";
+      table = "users";
     } else if (userType === "admin") {
-      query = "SELECT * FROM admin WHERE email = ?";
+      table = "admin";
     } else {
       return res.status(400).json({ message: "Invalid user type" });
     }
 
-    const [rows] = await db.execute(query, [email]);
-
-    if (rows.length === 0) {
+    const user = await findByEmail(email, table);
+    if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const user = rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-
+    // password check
+    const isMatch = await comparePassword(password, user.password || "");
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ id: user.id, role: userType }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    if (!process.env.JWT_SECRET) {
+      console.error("❌ Missing JWT_SECRET in .env");
+      return res.status(500).json({ message: "Server config error" });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, role: userType },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
       message: "Login successful",
       token,
       userId: user.id,
       userType,
-      title: user.title // Faculty ya University
+      title: user.title || null, // safe check
     });
-
   } catch (err) {
-    console.error("Error in loginUser:", err);
+    console.error("❌ Error in loginUser:", err);
     res.status(500).json({ message: "Error logging in" });
   }
 };

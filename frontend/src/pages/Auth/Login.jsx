@@ -57,6 +57,13 @@ const handleSubmit = async (e) => {
       data.userType
     );
 
+    // ✅ Save in localStorage for Profile page
+    localStorage.setItem("userId", data.userId);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("userType", data.userType);
+    if (data.seatNo) localStorage.setItem("seatNo", data.seatNo);
+    if (data.studentName) localStorage.setItem("studentName", data.studentName);
+
     // ✅ Navigate according to role
     if (data.userType === "student") {
       navigate("/student-dashboard", { replace: true });
@@ -73,8 +80,6 @@ const handleSubmit = async (e) => {
     console.error("Login Error:", error);
     alert("Login failed. Please try again later.");
   }
-
-
 };
 
 

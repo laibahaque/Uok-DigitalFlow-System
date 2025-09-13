@@ -1,10 +1,8 @@
-// backend/config/db.js
-const mysql = require("mysql2/promise");  // Use promise version of mysql2
+const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
 
 dotenv.config();
 
-// Create a promise-based connection
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,

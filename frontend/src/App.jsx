@@ -60,7 +60,7 @@ function App() {
             <UniAdminDashboard />
           </ProtectedRoute>
         }
-      />
+      /> <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

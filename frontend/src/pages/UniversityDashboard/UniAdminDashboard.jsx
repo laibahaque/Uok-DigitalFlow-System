@@ -12,6 +12,7 @@ import {
 
 import CSPayments from "./PaymentsRecord/CSPayments"; 
 import ZoologyPayments from "./PaymentsRecord/ZoologyPayments";
+import APPayments from "./PaymentsRecord/APPayments"
 
 const UniAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -84,6 +85,8 @@ const UniAdminDashboard = () => {
         return <CSPayments />;
       case "Zoology":
         return <ZoologyPayments />;
+        case "Applied Physics":
+        return <APPayments />;
       default:
         return null;
     }
@@ -149,7 +152,7 @@ const UniAdminDashboard = () => {
 
               {isDropdownOpen && (
                 <div className="mt-2 flex flex-col gap-2">
-                  {["Computer Science", "Zoology"].map((dept, idx) => (
+                  {["Computer Science", "Zoology", "Applied Physics"].map((dept, idx) => (
                     <button
                       key={idx}
                       onClick={() => {

@@ -10,8 +10,9 @@ import {
   HelpCircle,
 } from "lucide-react";
 
-import CS from "./Departments/CS"; 
+import CS from "./Departments/CS";
 import Zoology from "./Departments/Zoology";
+import AppliedPhysics from "./Departments/AP";
 
 const FacultyAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -109,6 +110,8 @@ const FacultyAdminDashboard = () => {
         return <CS />;
       case "Zoology":
         return <Zoology />;
+      case "Applied Physics":
+        return <AppliedPhysics />;
       default:
         return null;
     }
@@ -174,7 +177,7 @@ const FacultyAdminDashboard = () => {
 
               {isDropdownOpen && (
                 <div className="mt-2 flex flex-col gap-2">
-                  {["Computer Science", "Zoology"].map(
+                  {["Computer Science", "Zoology", "Applied Physics"].map(
                     (dept, idx) => (
                       <button
                         key={idx}

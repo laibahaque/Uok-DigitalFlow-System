@@ -13,16 +13,19 @@ const Proforma = ({ userId, studentInfo }) => {
     semester: [],
     contactNo: "",
     paidSlip: null,
+    examType: "",
   });
 
   const [maxSemester, setMaxSemester] = useState(0);
   const [errors, setErrors] = useState({});
   const [voucherGenerated, setVoucherGenerated] = useState(false);
   const [submitEnabled, setSubmitEnabled] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const updateField = (key, val) =>
     setForm((prev) => ({ ...prev, [key]: val }));
 
+  // Populate form with student info
   useEffect(() => {
     if (studentInfo) {
       setForm((prev) => ({
@@ -36,8 +39,8 @@ const Proforma = ({ userId, studentInfo }) => {
     }
   }, [studentInfo]);
 
+  // Enable submit only if voucher generated and paid slip uploaded
   useEffect(() => {
-    // Submit button active only if voucher generated AND paid slip uploaded
     setSubmitEnabled(voucherGenerated && form.paidSlip !== null);
   }, [voucherGenerated, form.paidSlip]);
 
@@ -53,7 +56,7 @@ const Proforma = ({ userId, studentInfo }) => {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type !== "image/jpeg" && file.type !== "image/jpg") {
+    if (file && !["image/jpeg", "image/jpg"].includes(file.type)) {
       alert("⚠️ Only JPG format is allowed!");
       return;
     }
@@ -65,56 +68,98 @@ const Proforma = ({ userId, studentInfo }) => {
     if (!form.fullname) newErrors.fullname = "Full name is required";
     if (!form.seatNo) newErrors.seatNo = "Seat number is required";
     if (!form.department) newErrors.department = "Department is required";
-    if (!form.semester.length)
-      newErrors.semester = "Select at least one semester";
+    if (!form.semester.length) newErrors.semester = "Select at least one semester";
+    if (!form.examType) newErrors.examType = "Please select exam type";
     if (!form.paidSlip) newErrors.paidSlip = "Upload paid slip image (JPG)";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const fee = form.semester.length * 60;
-    const payload = {
-      ...form,
-      submittedAt: new Date().toISOString(),
-      status: "Pending Department Approval",
-      totalFee: fee,
-    };
+    try {
+      const res = await fetch("http://localhost:5000/api/requests/proforma", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          sem_num: form.semester.join(","),
+          exam_type: form.examType,
+        }),
+      });
 
-    console.log("Proforma submitted payload:", payload);
-    alert("✅ Proforma submitted (check console). Replace with API call.");
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("✅ Proforma request submitted!");
+        window.location.href = "/dashboard";
+      } else {
+        alert("❌ Failed: " + data.message);
+      }
+    } catch (err) {
+      console.error("Error submitting request:", err);
+    }
   };
 
-  const generateVoucher = () => {
+  const generateVoucher = async () => {
+    setErrorMessage(""); // reset old error
+
     if (!form.fullname || !form.seatNo || !form.department || !form.semester.length) {
       alert("⚠️ Fill required fields and select semesters before generating voucher!");
       return;
     }
 
-    const fee = form.semester.length * 60;
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("University of Karachi - Fee Voucher", 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Full Name: ${form.fullname}`, 20, 40);
-    doc.text(`Seat No: ${form.seatNo}`, 20, 50);
-    doc.text(`Department: ${form.department}`, 20, 60);
-    doc.text(`Program: ${form.program}`, 20, 70);
-    doc.text(`Semesters Selected: ${form.semester.join(", ")}`, 20, 80);
-    doc.text(`Total Fee: Rs ${fee}`, 20, 90);
-    doc.text(
-      "Please upload paid slip image after generating voucher.",
-      20,
-      100
-    );
-    doc.save("FeeVoucher.pdf");
+    try {
+      // 🔎 Check backend se
+      const res = await fetch("http://localhost:5000/api/requests/check-regular", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          sem_num: form.semester.join(","),
+          exam_type: form.examType
+        }),
+      });
 
-    setVoucherGenerated(true); // mark voucher as generated
-    alert("✅ Voucher generated! Now upload your paid slip to enable submission.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(data.message); // bas backend ka message show karega
+        return; // voucher generate nahi hoga
+      }
+
+
+      // ✅ Voucher generate hoga agar koi issue nahi
+      const fee = form.semester.length * 60;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("University of Karachi - Fee Voucher", 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Full Name: ${form.fullname}`, 20, 40);
+      doc.text(`Seat No: ${form.seatNo}`, 20, 50);
+      doc.text(`Department: ${form.department}`, 20, 60);
+      doc.text(`Program: ${form.program}`, 20, 70);
+      doc.text(`Semesters Selected: ${form.semester.join(", ")}`, 20, 80);
+      doc.text(`Exam Type: ${form.examType}`, 20, 90);
+      doc.text(`Total Fee: Rs ${fee}`, 20, 100);
+      doc.text("Please upload paid slip image after generating voucher.", 20, 110);
+      doc.save("FeeVoucher.pdf");
+
+      setVoucherGenerated(true);
+      alert("✅ Voucher generated! Now upload your paid slip to enable submission.");
+
+    } catch (err) {
+      console.error("Voucher error:", err);
+      setErrorMessage("Server error. Please try again.");
+    }
   };
+
 
   const inputClass =
     "w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:ring-2 focus:ring-green-400 focus:outline-none";
@@ -126,9 +171,7 @@ const Proforma = ({ userId, studentInfo }) => {
         <h1 className="text-3xl font-bold tracking-wide text-green-700 uppercase">
           University Of Karachi
         </h1>
-        <p className="text-red-600 text-base mt-1">
-          Application for Proforma
-        </p>
+        <p className="text-red-600 text-base mt-1">Application for Proforma</p>
       </div>
 
       <form
@@ -146,8 +189,8 @@ const Proforma = ({ userId, studentInfo }) => {
               <input
                 type="text"
                 value={form.fullname}
-                onChange={(e) => updateField("fullname", e.target.value)}
-                className={inputClass}
+                readOnly
+                className="w-full border border-gray-300 rounded-md px-4 py-2 text-base bg-blue-100 text-gray-700 cursor-not-allowed focus:outline-none"
               />
               {errors.fullname && <p className={errorClass}>{errors.fullname}</p>}
             </div>
@@ -165,8 +208,8 @@ const Proforma = ({ userId, studentInfo }) => {
               <input
                 type="text"
                 value={form.seatNo}
-                onChange={(e) => updateField("seatNo", e.target.value)}
-                className={inputClass}
+                readOnly
+                className="w-full border border-gray-300 rounded-md px-4 py-2 text-base bg-blue-100 text-gray-700 cursor-not-allowed focus:outline-none"
               />
               {errors.seatNo && <p className={errorClass}>{errors.seatNo}</p>}
             </div>
@@ -193,8 +236,8 @@ const Proforma = ({ userId, studentInfo }) => {
               <input
                 type="text"
                 value={form.program}
-                onChange={(e) => updateField("program", e.target.value)}
-                className={inputClass}
+                readOnly
+                className="w-full border border-gray-300 rounded-md px-4 py-2 text-base bg-blue-100 text-gray-700 cursor-not-allowed focus:outline-none"
               />
             </div>
             <div>
@@ -202,8 +245,8 @@ const Proforma = ({ userId, studentInfo }) => {
               <input
                 type="text"
                 value={form.department}
-                onChange={(e) => updateField("department", e.target.value)}
-                className={inputClass}
+                readOnly
+                className="w-full border border-gray-300 rounded-md px-4 py-2 text-base bg-blue-100 text-gray-700 cursor-not-allowed focus:outline-none"
               />
               {errors.department && <p className={errorClass}>{errors.department}</p>}
             </div>
@@ -234,7 +277,24 @@ const Proforma = ({ userId, studentInfo }) => {
               {errors.semester && <p className={errorClass}>{errors.semester}</p>}
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-gray-700 mb-1">Select Exam Type</label>
+              <select
+                value={form.examType}
+                onChange={(e) => updateField("examType", e.target.value)}
+                className={inputClass}
+              >
+                <option value="">-- Select --</option>
+                <option value="Regular">Regular</option>
+                <option value="Improved">Improved</option>
+              </select>
+              {errors.examType && <p className={errorClass}>{errors.examType}</p>}
+            </div>
+          </div>
         </section>
+
 
         {/* Contact Info */}
         <section>
@@ -269,17 +329,21 @@ const Proforma = ({ userId, studentInfo }) => {
             {errors.paidSlip && <p className={errorClass}>{errors.paidSlip}</p>}
           </section>
         )}
+        {errorMessage && (
+          <div className="text-center text-red-600 font-medium mt-3">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="text-center space-x-4">
           <button
             type="submit"
             disabled={!submitEnabled}
-            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${
-              submitEnabled
-                ? "bg-green-600 text-white hover:bg-green-700 hover:shadow-lg"
-                : "bg-gray-400 text-gray-200 cursor-not-allowed"
-            }`}
+            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${submitEnabled
+              ? "bg-green-600 text-white hover:bg-green-700 hover:shadow-lg"
+              : "bg-gray-400 text-gray-200 cursor-not-allowed"
+              }`}
           >
             Submit Proforma
           </button>
@@ -287,11 +351,10 @@ const Proforma = ({ userId, studentInfo }) => {
             type="button"
             onClick={generateVoucher}
             disabled={voucherGenerated}
-            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${
-              voucherGenerated
-                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg"
-            }`}
+            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${voucherGenerated
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg"
+              }`}
           >
             Generate Voucher
           </button>

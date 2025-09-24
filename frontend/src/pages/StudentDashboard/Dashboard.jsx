@@ -13,6 +13,7 @@ import Profile from "./Profile";
 import Proforma from "./Forms/Proforma";
 import G1 from "./Forms/G1";
 import Transcript from "./Forms/Transcript";
+import TrackingCards from "./TrackingCards";
 
 const formsList = [
   { title: "Proforma Form" },
@@ -61,35 +62,45 @@ const StudentDashboard = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState("Home");
   const [studentInfo, setStudentInfo] = useState(null);
+  const [requests, setRequests] = useState([]);
+
 
   const studentName = localStorage.getItem("studentName");
   const userId = parseInt(localStorage.getItem("userId"), 10);
-
-  // ✅ Fetch once in Dashboard
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/api/users/student/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const res = await fetch("http://localhost:5000/api/users/student/me", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
         const data = await res.json();
-        if (res.ok) {
-          setStudentInfo(data);
-        } else {
-          console.error("Error fetching profile:", data.message);
-        }
+        if (res.ok) setStudentInfo(data);
+        else console.error("Error fetching profile:", data.message);
       } catch (err) {
         console.error("Error fetching profile:", err);
       }
     };
+    fetchProfile();
+  }, []);
 
-    if (userId) fetchProfile();
-  }, [userId]);
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/requests/my", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        const data = await res.json();
+        if (res.ok) setRequests(data);
+      } catch (err) {
+        console.error("Error fetching requests:", err);
+      }
+    };
+    fetchRequests();
+  }, []);
 
   useEffect(() => {
     document.title = "UOK-DFS - Dashboard";
@@ -106,94 +117,72 @@ const StudentDashboard = () => {
   }, []);
 
   const submittedForms = ["Proforma Form"];
-  const hasSubmitted =
-    selectedForm === "Home" || submittedForms.includes(selectedForm);
-const renderContent = () => {
-  switch (selectedForm) {
-    case "Home":
-      return (
-        <>
-          <h2 className="text-2xl font-bold text-green-700 mb-6">
-            Tracking Overview
-          </h2>
-          {hasSubmitted ? (
-            <div className="flex gap-6 overflow-x-auto pb-4">
-              {statuses.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`flex-shrink-0 w-69 h-64 relative group p-6 rounded-2xl border border-green-100 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 
-                    ${
-                      item.status === "Completed"
-                        ? "bg-green-50 hover:bg-green-100"
-                        : "bg-white/80 backdrop-blur-lg hover:bg-green-50"
-                    }`}
-                >
-                  <h3 className="text-lg font-semibold text-gray-800 group-hover:text-green-700">
-                    {item.title}
-                  </h3>
-                  {item.date && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      📅 {item.date}
-                    </p>
-                  )}
-                  <span
-                    className={`absolute bottom-6 inline-block px-3 py-1 text-sm font-medium rounded-full ${item.color}`}
-                  >
-                    {item.status}
-                  </span>
-                  <div className="absolute bottom-0 left-0 w-0 h-1 bg-green-500 group-hover:w-full transition-all duration-300 rounded-b-xl"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-yellow-800 shadow-md">
-              <h3 className="text-lg font-semibold">No Request Found</h3>
-              <p className="mt-2 text-sm">
-                You have not submitted this form yet. Please submit a new
-                request to start tracking.
-              </p>
-            </div>
-          )}
-        </>
-      );
+  const hasSubmitted = requests.length > 0;
 
-    case "My Profile":
-      return <Profile profile={studentInfo} userId={userId} />;
+  const renderContent = () => {
+    switch (selectedForm) {
+      case "Home":
+        return (
+          <>
+            <h2 className="text-2xl font-bold text-green-700 mb-6">
+              Tracking Overview
+            </h2>
+            {hasSubmitted ? (
+              <div className="space-y-8">
+                {requests.map((req) => (
+                  <TrackingCards key={req.id} requestId={req.id} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-yellow-800 shadow-md">
+                <h3 className="text-lg font-semibold">No Request Found</h3>
+                <p className="mt-2 text-sm">
+                  You have not submitted any requests yet. Please submit a new request to start tracking.
+                </p>
+              </div>
+            )}
 
-    case "Proforma Form":
-      return <Proforma userId={userId} studentInfo={studentInfo} />;
 
-    case "G1 Form":
-      return <G1 userId={userId} studentInfo={studentInfo} />;
+          </>
+        );
 
-    case "Transcript Request":
-      return <Transcript userId={userId} studentInfo={studentInfo} />;
+      case "My Profile":
+        return <Profile profile={studentInfo} userId={userId} />;
 
-    case "My Requests":
-      return (
-        <>
-          <h2 className="text-2xl font-bold text-green-700 mb-6">
-            My Requests
-          </h2>
-          <p className="text-gray-600">
-            📌 List of submitted requests will appear here.
-          </p>
-        </>
-      );
+      case "Proforma Form":
+        return <Proforma userId={userId} studentInfo={studentInfo} />;
 
-    default:
-      return (
-        <>
-          <h2 className="text-2xl font-bold text-green-700 mb-6">
-            {selectedForm} - Submit Request
-          </h2>
-          <p className="text-gray-600">
-            📝 Form for {selectedForm} will be here.
-          </p>
-        </>
-      );
-  }
-};
+      case "G1 Form":
+        return <G1 userId={userId} studentInfo={studentInfo} />;
+
+      case "Transcript Request":
+        return <Transcript userId={userId} studentInfo={studentInfo} />;
+
+      case "My Requests":
+        return (
+          <>
+            <h2 className="text-2xl font-bold text-green-700 mb-6">
+              My Requests
+            </h2>
+            <p className="text-gray-600">
+              📌 List of submitted requests will appear here.
+            </p>
+          </>
+        );
+
+      default:
+        return (
+          <>
+            <h2 className="text-2xl font-bold text-green-700 mb-6">
+              {selectedForm} - Submit Request
+            </h2>
+            <p className="text-gray-600">
+              📝 Form for {selectedForm} will be here.
+            </p>
+          </>
+        );
+    }
+  };
 
 
   return (
@@ -216,10 +205,9 @@ const renderContent = () => {
             <button
               onClick={() => setSelectedForm("Home")}
               className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow font-medium transition-all
-                ${
-                  selectedForm === "Home"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-white hover:bg-green-50 text-gray-700"
+                ${selectedForm === "Home"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-white hover:bg-green-50 text-gray-700"
                 }`}
             >
               <Home className="w-5 h-5 text-green-600" /> Home
@@ -228,10 +216,9 @@ const renderContent = () => {
             <button
               onClick={() => setSelectedForm("My Profile")}
               className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow font-medium transition-all
-                ${
-                  selectedForm === "My Profile"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-white hover:bg-green-50 text-gray-700"
+                ${selectedForm === "My Profile"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-white hover:bg-green-50 text-gray-700"
                 }`}
             >
               <User className="w-5 h-5 text-green-600" /> My Profile
@@ -240,10 +227,9 @@ const renderContent = () => {
             <button
               onClick={() => setSelectedForm("My Requests")}
               className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow font-medium transition-all
-                ${
-                  selectedForm === "My Requests"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-white hover:bg-green-50 text-gray-700"
+                ${selectedForm === "My Requests"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-white hover:bg-green-50 text-gray-700"
                 }`}
             >
               <ClipboardList className="w-5 h-5 text-green-600" /> My Requests
@@ -259,9 +245,8 @@ const renderContent = () => {
                   <Send className="w-5 h-5 text-green-600" /> Submit Request
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 transform transition-transform ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transform transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 

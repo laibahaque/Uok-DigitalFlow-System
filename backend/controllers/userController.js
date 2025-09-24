@@ -1,14 +1,14 @@
-const { getStudentProfile } = require("../models/Student");
+const { getStudentProfileByStudentId } = require("../models/Student");
 const { findById, getPassword, updatePassword } = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 
-// 📌 Student Profile
 const getStudentInfo = async (req, res) => {
   try {
-    const student = await getStudentProfile(req.params.id);
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
+    const studentId = req.user.student_id; // fetched from token
+    if (!studentId) return res.status(403).json({ message: "Not a student" });
+
+    const student = await getStudentProfileByStudentId(studentId);
+    if (!student) return res.status(404).json({ message: "Student not found" });
 
     res.json({
       full_name: student.name,

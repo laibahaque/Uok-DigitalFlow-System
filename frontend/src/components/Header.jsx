@@ -10,12 +10,29 @@ const Header = ({ notificationCount = 0 }) => {
   const [openNotifications, setOpenNotifications] = useState(false);
   const navigate = useNavigate();
 
-  // Dummy notifications (tum API se fetch bhi kar sakti ho)
-  const notifications = [
-    { id: 1, message: "Your Proforma request has been approved ✅" },
-    { id: 2, message: "New notice from University ⚡" },
-    { id: 3, message: "Transcript request is under review ⏳" },
-  ];
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/requests/notifications", {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch notifications");
+        const data = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+
 
   useEffect(() => {
     if (!user) return;

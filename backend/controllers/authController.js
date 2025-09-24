@@ -48,7 +48,6 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // password check
     const isMatch = await comparePassword(password, user.password || "");
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
@@ -59,18 +58,21 @@ const loginUser = async (req, res) => {
       return res.status(500).json({ message: "Server config error" });
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: userType },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    // Token payload fix
+    const payload = {
+      id: user.id,
+      role: userType,            // "student" or "admin"
+      title: user.title || null, // Faculty / University (for admin only)
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     res.json({
       message: "Login successful",
       token,
       userId: user.id,
       userType,
-      title: user.title || null, // safe check
+      title: user.title || null,
     });
   } catch (err) {
     console.error("❌ Error in loginUser:", err);

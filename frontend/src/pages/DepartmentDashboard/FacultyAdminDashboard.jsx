@@ -93,17 +93,8 @@ const FacultyAdminDashboard = () => {
           </div>
         );
 
-      case "Requests":
-        return (
-          <div className="bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
-            <h2 className="text-2xl font-semibold text-green-700 mb-4">
-              All Requests
-            </h2>
-            <p className="text-gray-600">
-              📌 List of department requests will appear here.
-            </p>
-          </div>
-        );
+      
+
 
       // ✅ Show CS Page
       case "Computer Science":

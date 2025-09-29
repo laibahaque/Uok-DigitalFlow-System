@@ -8,20 +8,18 @@ const Profile = ({ profile, userId }) => {
 
   const handleChangePassword = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/users/password/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            oldPassword,
-            newPassword,
-          }),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/users/password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      });
+
 
       const data = await res.json();
       if (!res.ok) {

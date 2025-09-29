@@ -100,7 +100,7 @@ const StudentDashboard = () => {
       try {
         const res = await fetch("http://localhost:5000/api/requests/my", {
           headers: {
-            AAuthorization: `Bearer ${sessionStorage.getItem("token")}`,
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 
           },
         });

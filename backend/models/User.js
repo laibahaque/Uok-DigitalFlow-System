@@ -9,6 +9,18 @@ const createUser = async (email, hashedPassword, roleId = 3) => {
   return result.insertId; // return new user id
 };
 
+
+async function getAdminById(userId) {
+  const [rows] = await db.query(
+    `SELECT u.id, u.email, r.name AS role_name
+     FROM users u
+     JOIN roles r ON u.role_id = r.id
+     WHERE u.id = ?`,
+    [userId]
+  );
+  return rows[0]; // ek hi admin aayega
+}
+
 const findByEmail = async (email) => {
   const [rows] = await db.execute(`SELECT * FROM users WHERE email = ?`, [email]);
   return rows[0];
@@ -28,4 +40,4 @@ const getPassword = async (id) => {
   return rows[0]?.password;
 };
 
-module.exports = { createUser, findByEmail, findById, updatePassword, getPassword };
+module.exports = { createUser, getAdminById, findByEmail, findById, updatePassword, getPassword };

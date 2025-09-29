@@ -4,7 +4,7 @@ const {
 const {
   findById,
   getPassword,
-  updatePassword,
+  updatePassword,getAdminById,
 } = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 
@@ -40,24 +40,15 @@ const getAdminInfo = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Not an admin." });
     }
 
-    const [rows] = await db.query(
-      `SELECT u.id, u.email, r.name AS role_name
-       FROM users u
-       JOIN roles r ON u.role_id = r.id
-       WHERE u.id = ?`,
-      [req.user.id]
-    );
-
-    if (rows.length === 0) {
+    const admin = await getAdminById(req.user.id);
+    if (!admin) {
       return res.status(404).json({ message: "Admin not found" });
     }
-
-    const admin = rows[0];
 
     res.json({
       id: admin.id,
       email: admin.email,
-      role_name: admin.role_name   // 👈 Yeh bhejna zaroori hai
+      role_name: admin.role_name
     });
   } catch (err) {
     console.error("❌ Error fetching admin info:", err);

@@ -58,6 +58,7 @@ const Login = () => {
       login({
         token: data.token,
         roleSlug: data.roleSlug,  // ✅ correct key name
+        roleName: data.roleName,  
         userId: data.userId,
         email: data.email,
       });

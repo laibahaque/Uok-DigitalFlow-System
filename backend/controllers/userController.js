@@ -40,22 +40,30 @@ const getAdminInfo = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Not an admin." });
     }
 
-    const admin = await findById(req.user.id);
-    if (!admin) {
+    const [rows] = await db.query(
+      `SELECT u.id, u.email, r.name AS role_name
+       FROM users u
+       JOIN roles r ON u.role_id = r.id
+       WHERE u.id = ?`,
+      [req.user.id]
+    );
+
+    if (rows.length === 0) {
       return res.status(404).json({ message: "Admin not found" });
     }
 
+    const admin = rows[0];
+
     res.json({
       id: admin.id,
-      role_id: admin.role_id,
-      email: req.user.email, // JWT me email bhi dalwa dena at login time
+      email: admin.email,
+      role_name: admin.role_name   // 👈 Yeh bhejna zaroori hai
     });
   } catch (err) {
     console.error("❌ Error fetching admin info:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 // 📌 Change Password (sirf student)
 const changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;

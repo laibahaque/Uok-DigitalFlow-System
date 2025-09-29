@@ -17,27 +17,36 @@ const Header = ({ notificationCount = 0 }) => {
     console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
 
 
+    // Header.jsx
     const fetchNotifications = async () => {
-      try {
-        // Agar tumhari notifications ke liye dedicated route hai to uska use karo
-        // Filhal sirf student info fetch kar ke example dete hain
-        const res = await fetch("http://localhost:5000/api/users/student/me", {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+      console.log("🔄 Notifications Fetch Start");
+      console.log("🔑 Token being sent:", user?.token);
 
-          },
+      try {
+        let url = "";
+
+        if (user.role === "student") {
+          url = "http://localhost:5000/api/users/student/me";
+        } else if (user.role === "university-admin") {
+          url = "http://localhost:5000/api/users/university-admin/me";
+        } else if (user.role === "faculty-admin") {
+          url = "http://localhost:5000/api/users/faculty-admin/me";
+        }
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${user.token}` },
         });
 
-        console.log("📡 Notifications API Response:", res);
+        if (!res.ok) throw new Error(`Failed to fetch notifications`);
 
-        if (!res.ok) throw new Error("Failed to fetch notifications");
         const data = await res.json();
-        console.log("✅ Notifications Data:", data);
-        setNotifications(data.notifications || []); // ✅ agar backend notifications bhejta hai
-      } catch (err) {
-        console.error("❌ Error fetching notifications:", err);
+        console.log("📡 Notifications API Response:", data);
+        // setNotifications(data.notifications);
+      } catch (error) {
+        console.error("❌ Error fetching notifications:", error);
       }
     };
+
 
     fetchNotifications();
   }, []);
@@ -72,12 +81,15 @@ const Header = ({ notificationCount = 0 }) => {
 
         const data = await res.json();
         console.log("✅ User Data:", data);
-
-        if (res.ok && (data.full_name || data.name)) {
-          setUserData({ name: data.full_name || data.name });
+        if (res.ok) {
+          setUserData({
+            name: data.full_name || data.name || data.role_name || user.roleName
+          });
         } else {
           setUserData({ name: "User" });
         }
+
+
       } catch (err) {
         console.error("❌ Error fetching user info:", err);
         setUserData({ name: "User" });
@@ -99,8 +111,11 @@ const Header = ({ notificationCount = 0 }) => {
   return (
     <div className="flex justify-between items-center shadow-md px-6 py-6 bg-green-600 mb-6 relative">
       <h2 className="text-xl font-semibold text-gray-100">
-        {userData ? `Welcome, ${userData.name}` : "Welcome, User"}
+        {userData
+          ? `Welcome, ${userData.name || userData.roleName || "User"}`
+          : "Welcome, User"}
       </h2>
+
 
       <div className="flex items-center gap-6 relative">
         {/* 🔔 Notifications */}

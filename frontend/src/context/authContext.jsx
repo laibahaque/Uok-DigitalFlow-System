@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     const userObj = {
       id: userData.userId,     // ✅ backend se aa raha
       role: userData.roleSlug, // ✅ backend roleSlug
+      roleName: userData.roleName,
       email: userData.email,   // ✅ ab token payload se bhi aa raha
       token: userData.token
     };

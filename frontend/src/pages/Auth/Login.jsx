@@ -30,57 +30,56 @@ const Login = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-// frontend/src/pages/Auth/Login.jsx// Login.jsx
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  // frontend/src/pages/Auth/Login.jsx// Login.jsx
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log("🚀 Login Form Submit:", formData, "Active Tab:", activeTab);
 
-  try {
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: formData.email,
-        password: formData.password,
-        userType: activeTab, // student | admin
-      }),
-    });
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          userType: activeTab,
+        }),
+      });
 
-    const data = await response.json();
-    if (!response.ok) {
-      alert(data?.message || "Login failed");
-      return;
-    }
+      console.log("📡 Login API Response:", response);
+      const data = await response.json();
+      console.log("✅ Login Data:", data);
 
-    // ✅ Save user in context
-    login(
-      { id: data.userId, token: data.token, title: data.title },
-      data.userType
-    );
+      if (!response.ok) {
+        alert(data?.message || "Login failed");
+        return;
+      }
 
-    // ✅ Save in localStorage for Profile page
-    localStorage.setItem("userId", data.userId);
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("userType", data.userType);
-    if (data.seatNo) localStorage.setItem("seatNo", data.seatNo);
-    if (data.studentName) localStorage.setItem("studentName", data.studentName);
+      login({
+        token: data.token,
+        roleSlug: data.roleSlug,  // ✅ correct key name
+        userId: data.userId,
+        email: data.email,
+      });
 
-    // ✅ Navigate according to role
-    if (data.userType === "student") {
-      navigate("/student-dashboard", { replace: true });
-    } else if (data.userType === "admin") {
-      if (data.title === "Faculty") {
+
+      console.log("🔑 User logged in with role:", data.roleSlug);
+
+      if (data.roleSlug === "student") {
+        navigate("/dashboard", { replace: true });
+      } else if (data.roleSlug === "faculty-admin") {
         navigate("/faculty-dashboard", { replace: true });
-      } else if (data.title === "University") {
+      } else if (data.roleSlug === "university-admin") {
         navigate("/university-dashboard", { replace: true });
       } else {
-        alert("Unknown admin type");
+        alert("Unknown role");
       }
+    } catch (error) {
+      console.error("❌ Login Error:", error);
+      alert("Login failed. Please try again later.");
     }
-  } catch (error) {
-    console.error("Login Error:", error);
-    alert("Login failed. Please try again later.");
-  }
-};
+  };
+
 
 
 
@@ -164,7 +163,7 @@ const handleSubmit = async (e) => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
               />
             </div>
 
@@ -179,7 +178,7 @@ const handleSubmit = async (e) => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
               />
             </div>
 

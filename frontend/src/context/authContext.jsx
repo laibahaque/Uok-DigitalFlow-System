@@ -39,26 +39,21 @@ export const AuthProvider = ({ children }) => {
     };
   }, [user]);
 
-  const login = (userData, role) => {
-    let finalRole = role;
+  const login = (userData) => {
+    const userObj = {
+      id: userData.userId,     // ✅ backend se aa raha
+      role: userData.roleSlug, // ✅ backend roleSlug
+      email: userData.email,   // ✅ ab token payload se bhi aa raha
+      token: userData.token
+    };
 
-    if (role === "admin") {
-      if (userData.title === "University") {
-        finalRole = "uni_admin";
-      } else if (userData.title === "Faculty") {
-        finalRole = "dept_admin";
-      }
-    }
-
-    const userObj = { ...userData, role: finalRole };
     setUser(userObj);
 
-    // Save user + token
     sessionStorage.setItem("user", JSON.stringify(userObj));
-    if (userData.token) {
-      sessionStorage.setItem("token", userData.token);
-    }
+    sessionStorage.setItem("token", userData.token);
+
   };
+
 
   const logout = () => {
     setUser(null);
@@ -68,8 +63,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isStudent = user?.role === "student";
-  const isUniAdmin = user?.role === "uni_admin";
-  const isDeptAdmin = user?.role === "dept_admin";
+  const isUniAdmin = user?.role === "university-admin";
+  const isDeptAdmin = user?.role === "faculty-admin";
 
   return (
     <AuthContext.Provider

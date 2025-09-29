@@ -31,22 +31,21 @@ function App() {
         }
       />
 
-      {/* Dashboard → only if logged in */}
+      {/* Student Dashboard */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["student"]}>
             <Dashboard />
           </ProtectedRoute>
         }
       />
 
-
       {/* Faculty Admin Dashboard */}
       <Route
         path="/faculty-dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["faculty-admin"]}>
             <FacultyAdminDashboard />
           </ProtectedRoute>
         }
@@ -56,11 +55,14 @@ function App() {
       <Route
         path="/university-dashboard/*"
         element={
-          <ProtectedRoute allowedRoles={["uni_admin"]}>
+          <ProtectedRoute allowedRoles={["university-admin"]}>
             <UniAdminDashboard />
           </ProtectedRoute>
         }
-      /> <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

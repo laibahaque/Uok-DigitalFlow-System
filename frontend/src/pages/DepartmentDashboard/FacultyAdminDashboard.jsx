@@ -22,11 +22,13 @@ const FacultyAdminDashboard = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
-    document.title = "UOK-DFS - Faculty Admin Dashboard";
-    if (!user || user.role !== "dept_admin") {
+    console.log("🏁 FacultyAdminDashboard Mounted, user:", user);
+    if (!user || user.role !== "faculty-admin") {
+      console.warn("⚠️ Unauthorized access, redirecting...");
       navigate("/login", { replace: true });
     }
   }, [user, navigate]);
+
 
   // ✅ Home Cards (Attendance + Semester Results only)
   const renderHomeCards = () => {
@@ -93,7 +95,7 @@ const FacultyAdminDashboard = () => {
           </div>
         );
 
-      
+
 
 
       // ✅ Show CS Page

@@ -13,19 +13,29 @@ const Header = ({ notificationCount = 0 }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
+    console.log("🔄 Notifications Fetch Start");
+    console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
+
+
     const fetchNotifications = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/requests/notifications", {
+        // Agar tumhari notifications ke liye dedicated route hai to uska use karo
+        // Filhal sirf student info fetch kar ke example dete hain
+        const res = await fetch("http://localhost:5000/api/users/student/me", {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+
           },
         });
 
+        console.log("📡 Notifications API Response:", res);
+
         if (!res.ok) throw new Error("Failed to fetch notifications");
         const data = await res.json();
-        setNotifications(data);
+        console.log("✅ Notifications Data:", data);
+        setNotifications(data.notifications || []); // ✅ agar backend notifications bhejta hai
       } catch (err) {
-        console.error("Error fetching notifications:", err);
+        console.error("❌ Error fetching notifications:", err);
       }
     };
 
@@ -35,33 +45,38 @@ const Header = ({ notificationCount = 0 }) => {
 
 
   useEffect(() => {
+    console.log("👤 User Context:", user);
     if (!user) return;
 
     const fetchUserData = async () => {
+      console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
+
+
       try {
+        let url = "";
+
         if (user.role === "student") {
-          const res = await fetch(
-            `http://localhost:5000/api/users/student/${user.id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-              },
-            }
-          );
+          url = "http://localhost:5000/api/users/student/me"; // ✅ fixed
+        } else if (user.role === "faculty-admin" || user.role === "university-admin") {
+          url = "http://localhost:5000/api/users/admin/me"; // ✅ fixed
+        }
 
-          const data = await res.json();
+        if (!url) return;
 
-          if (res.ok && data.full_name) {
-            setUserData({ name: data.full_name });
-          } else {
-            setUserData({ name: "Student" });
-          }
-        } else if (user.role === "uni_admin") {
-          setUserData({ name: "UoK Admin" });
-        } else if (user.role === "dept_admin") {
-          setUserData({ name: "Faculty Admin" });
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`, // ✅
+
+          },
+        });
+
+        const data = await res.json();
+        console.log("✅ User Data:", data);
+
+        if (res.ok && (data.full_name || data.name)) {
+          setUserData({ name: data.full_name || data.name });
         } else {
-          setUserData({ name: "Admin" });
+          setUserData({ name: "User" });
         }
       } catch (err) {
         console.error("❌ Error fetching user info:", err);
@@ -71,6 +86,10 @@ const Header = ({ notificationCount = 0 }) => {
 
     fetchUserData();
   }, [user]);
+
+
+
+
 
   const handleLogout = () => {
     logout();

@@ -1,26 +1,47 @@
+// controllers/authController.js
 const jwt = require("jsonwebtoken");
-const { findBySeatAndDepartment } = require("../models/Student");
+const db = require("../config/db");
+const { findBySeatAndDepartment, updateStudentUserId } = require("../models/Student");
 const { createUser, findByEmail } = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 
-// 📌 Register Student
+// 📌 Register
 const registerUser = async (req, res) => {
   const { seatNumber, email, department, password } = req.body;
+
+  console.log("📥 Incoming Registration Request:", { seatNumber, email, department });
 
   if (!seatNumber || !email || !department || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
-    // Student validate karo
     const student = await findBySeatAndDepartment(seatNumber, department);
+    console.log("📌 Student Found:", student);
+
     if (!student) {
       return res.status(400).json({ message: "Invalid seat number or department" });
     }
 
-    const hashedPassword = await hashPassword(password);
+    if (student.user_id) {
+      console.log("⚠️ Student already linked with user_id:", student.user_id);
+      return res.status(400).json({ message: "Account already exists for this student" });
+    }
 
-    await createUser(student.id, email, hashedPassword);
+    const existingUser = await findByEmail(email);
+    if (existingUser) {
+      console.log("⚠️ Email already exists in users table:", existingUser);
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+    console.log("🔑 Hashed Password Generated");
+
+    const newUserId = await createUser(email, hashedPassword, 3); // role_id = 3 → student
+    console.log("✅ New User Created with ID:", newUserId);
+
+    await updateStudentUserId(student.id, newUserId);
+    console.log(`🔗 Student ID ${student.id} linked with User ID ${newUserId}`);
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
@@ -29,50 +50,42 @@ const registerUser = async (req, res) => {
   }
 };
 
-// 📌 Login (Student + Admin)
+// 📌 Login
 const loginUser = async (req, res) => {
   const { email, password, userType } = req.body;
 
   try {
-    let table = "";
-    if (userType === "student") {
-      table = "users";
-    } else if (userType === "admin") {
-      table = "admin";
-    } else {
-      return res.status(400).json({ message: "Invalid user type" });
-    }
-
-    const user = await findByEmail(email, table);
-    if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
-    }
+    const user = await findByEmail(email);
+    if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
     const isMatch = await comparePassword(password, user.password || "");
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+
+    // fetch role
+    const [roleRows] = await db.query(`SELECT slug, name FROM roles WHERE id = ?`, [user.role_id]);
+    const roleSlug = roleRows[0]?.slug; // "student", "faculty-admin", "university-admin"
+    const roleName = roleRows[0]?.name;
+
+    if (!roleSlug) return res.status(400).json({ message: "User role not found" });
+
+    // ✅ Restrict login tab
+    if (userType === "student" && roleSlug !== "student") {
+      return res.status(403).json({ message: "Please login through Admin tab" });
+    }
+    if (userType === "admin" && roleSlug === "student") {
+      return res.status(403).json({ message: "Please login through Student tab" });
     }
 
-    if (!process.env.JWT_SECRET) {
-      console.error("❌ Missing JWT_SECRET in .env");
-      return res.status(500).json({ message: "Server config error" });
-    }
-
-    // Token payload fix
-    const payload = {
-      id: user.id,
-      role: userType,            // "student" or "admin"
-      title: user.title || null, // Faculty / University (for admin only)
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const payload = { id: user.id, role: roleSlug, email: user.email };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
       message: "Login successful",
       token,
       userId: user.id,
-      userType,
-      title: user.title || null,
+      roleSlug,   // "student" | "faculty-admin" | "university-admin"
+      roleName,   // Friendly name
+      userType,   // "student" | "admin"
     });
   } catch (err) {
     console.error("❌ Error in loginUser:", err);

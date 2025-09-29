@@ -64,33 +64,44 @@ const StudentDashboard = () => {
   const [studentInfo, setStudentInfo] = useState(null);
   const [requests, setRequests] = useState([]);
 
+  const storedUser = sessionStorage.getItem("user")
+    ? JSON.parse(sessionStorage.getItem("user"))
+    : null;
 
-  const studentName = localStorage.getItem("studentName");
-  const userId = parseInt(localStorage.getItem("userId"), 10);
+  const studentName = storedUser?.email || "Unknown";
+  const userId = storedUser?.id || null;
+
   useEffect(() => {
+    console.log("🎓 StudentDashboard mounted, userId:", userId);
+
     const fetchProfile = async () => {
+      console.log("🔑 Token being sent:", localStorage.getItem("token"));
+
       try {
+        console.log("📡 Fetching Student Profile...");
         const res = await fetch("http://localhost:5000/api/users/student/me", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
           },
         });
         const data = await res.json();
+        console.log("✅ Profile Data:", data);
         if (res.ok) setStudentInfo(data);
-        else console.error("Error fetching profile:", data.message);
       } catch (err) {
-        console.error("Error fetching profile:", err);
+        console.error("❌ Error fetching profile:", err);
       }
     };
     fetchProfile();
   }, []);
+
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/requests/my", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            AAuthorization: `Bearer ${sessionStorage.getItem("token")}`,
+
           },
         });
         const data = await res.json();

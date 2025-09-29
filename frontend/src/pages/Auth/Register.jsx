@@ -24,7 +24,7 @@ const Register = () => {
   }, []);
   const departments = [
     "Computer Science",
-    "Public Administration",
+    "Applied Physics",
     "Zoology",
   ];
 

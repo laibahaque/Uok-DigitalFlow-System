@@ -23,7 +23,7 @@ const UniAdminDashboard = () => {
 
   useEffect(() => {
     document.title = "UOK-DFS - University Admin Dashboard";
-    if (!user || user.role !== "uni_admin") {
+    if (!user || user.role !== "university-admin") {
       navigate("/login", { replace: true });
     }
   }, [user, navigate]);

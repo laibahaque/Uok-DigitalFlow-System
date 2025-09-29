@@ -1,14 +1,24 @@
-const { getStudentProfileByStudentId } = require("../models/Student");
-const { findById, getPassword, updatePassword } = require("../models/User");
+const {
+  getStudentProfileByUserId,
+} = require("../models/Student");
+const {
+  findById,
+  getPassword,
+  updatePassword,
+} = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 
+// 📌 Student Info
 const getStudentInfo = async (req, res) => {
   try {
-    const studentId = req.user.student_id; // fetched from token
-    if (!studentId) return res.status(403).json({ message: "Not a student" });
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Access denied. Not a student." });
+    }
 
-    const student = await getStudentProfileByStudentId(studentId);
-    if (!student) return res.status(404).json({ message: "Student not found" });
+    const student = await getStudentProfileByUserId(req.user.id);
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
 
     res.json({
       full_name: student.name,
@@ -26,29 +36,47 @@ const getStudentInfo = async (req, res) => {
 // 📌 Admin Info
 const getAdminInfo = async (req, res) => {
   try {
-    const admin = await findById(req.params.id);
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
+    if (req.user.role !== "faculty-admin" && req.user.role !== "university-admin") {
+      return res.status(403).json({ message: "Access denied. Not an admin." });
+    }
 
-    res.json(admin);
+    const admin = await findById(req.user.id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.json({
+      id: admin.id,
+      role_id: admin.role_id,
+      email: req.user.email, // JWT me email bhi dalwa dena at login time
+    });
   } catch (err) {
     console.error("❌ Error fetching admin info:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// 📌 Change Password
+// 📌 Change Password (sirf student)
 const changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
   try {
-    const currentHash = await getPassword(req.params.id);
-    if (!currentHash) return res.status(404).json({ message: "User not found" });
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can change password" });
+    }
+
+    const currentHash = await getPassword(req.user.id);
+    if (!currentHash) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     const isMatch = await comparePassword(oldPassword, currentHash);
-    if (!isMatch) return res.status(400).json({ message: "Old password is incorrect" });
+    if (!isMatch) {
+      return res.status(400).json({ message: "Old password is incorrect" });
+    }
 
     const newHash = await hashPassword(newPassword);
-    await updatePassword(req.params.id, newHash);
+    await updatePassword(req.user.id, newHash);
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {

@@ -3,6 +3,7 @@ const {
   createRequestLog,
   getLogsByRequest,
   checkExistingRegularRequest,
+  getMyRequestsFromModel,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -101,9 +102,20 @@ const checkDuplicateRegular = async (req, res) => {
     return res.status(500).json({ message: "Server error while checking duplicate request" });
   }
 };
+const getMyRequests = async (req, res) => {
+    console.log("🔥 getMyRequests controller reached, user:", req.user);
+  try {
+    const data = await getMyRequestsFromModel(req, res);
+    // Model already sends response, no need to send again
+  } catch (err) {
+    console.error("getMyRequests error:", err);
+    res.status(500).json({ message: "Server error while fetching requests" });
+  }
+};
 
 module.exports = {
   submitProformaRequest,
   getRequestLogs,
   checkDuplicateRegular,
+  getMyRequests,
 };

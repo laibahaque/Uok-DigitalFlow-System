@@ -72,10 +72,31 @@ const checkExistingRegularRequest = async (loggedInUserId, semNum) => {
 
   return rows.length > 0;
 };
-
+const getMyRequestsFromModel = async (req, res) => {
+  try {
+    console.log("🔎 getMyRequests called!");
+    console.log("🔎 Logged in user ID:", req.user.id);
+    const userId = req.user.id;
+    const [rows] = await db.execute(
+      `SELECT r.id, r.form_type, r.sem_num, r.exam_type,  r.created_at
+         FROM requests r
+         JOIN students s ON r.student_id = s.id
+         WHERE s.user_id = ?
+         ORDER BY r.created_at DESC`,
+      [userId]
+    );
+    
+    console.log("✅ Query result:", rows);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error("DB Error in getMyRequests:", err);
+    throw err;
+  }
+};
 module.exports = {
   createFormRequest,
   createRequestLog,
   getLogsByRequest,
-  checkExistingRegularRequest
+  checkExistingRegularRequest,
+  getMyRequestsFromModel,
 };

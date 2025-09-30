@@ -2,7 +2,7 @@ const db = require("../config/db");
 
 // ✅ Register-time: seat + department
 const findBySeatAndDepartment = async (seatNumber, department) => {
-  console.log("🔎 Running query for seat:", seatNumber, "department:", department);
+  // console.log("🔎 Running query for seat:", seatNumber, "department:", department);
 
   const [rows] = await db.query(
     `SELECT * FROM students 
@@ -11,7 +11,7 @@ const findBySeatAndDepartment = async (seatNumber, department) => {
     [seatNumber, department]
   );
 
-  console.log("📌 Query Result:", rows);
+  // console.log("📌 Query Result:", rows);
   return rows[0];
 };
 

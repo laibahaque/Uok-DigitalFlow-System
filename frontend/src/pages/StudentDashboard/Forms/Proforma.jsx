@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 
-const Proforma = ({ userId, studentInfo }) => {
+const Proforma = ({ userId, studentInfo, selectedForm }) => {
   const [form, setForm] = useState({
     fullname: "",
     fatherName: "",
@@ -84,9 +84,10 @@ const Proforma = ({ userId, studentInfo }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         },
         body: JSON.stringify({
+          form_type: selectedForm,
           sem_num: form.semester.join(","),
           exam_type: form.examType,
         }),
@@ -95,7 +96,7 @@ const Proforma = ({ userId, studentInfo }) => {
 
       const data = await res.json();
       if (res.ok) {
-        alert("✅ Proforma request submitted!");
+        alert(`✅ ${selectedForm} request submitted!`);
         window.location.href = "/dashboard";
       } else {
         alert("❌ Failed: " + data.message);
@@ -119,7 +120,7 @@ const Proforma = ({ userId, studentInfo }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           sem_num: form.semester.join(","),
@@ -130,7 +131,7 @@ const Proforma = ({ userId, studentInfo }) => {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMessage(data.message); // bas backend ka message show karega
+        setErrorMessage(data.message ); // bas backend ka message show karega
         return; // voucher generate nahi hoga
       }
 

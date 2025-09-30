@@ -22,7 +22,7 @@ const FacultyAdminDashboard = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
-    console.log("🏁 FacultyAdminDashboard Mounted, user:", user);
+    // console.log("🏁 FacultyAdminDashboard Mounted, user:", user);
     if (!user || user.role !== "faculty-admin") {
       console.warn("⚠️ Unauthorized access, redirecting...");
       navigate("/login", { replace: true });

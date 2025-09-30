@@ -9,7 +9,7 @@ const { hashPassword, comparePassword } = require("../utils/password");
 const registerUser = async (req, res) => {
   const { seatNumber, email, department, password } = req.body;
 
-  console.log("📥 Incoming Registration Request:", { seatNumber, email, department });
+  // console.log("📥 Incoming Registration Request:", { seatNumber, email, department });
 
   if (!seatNumber || !email || !department || !password) {
     return res.status(400).json({ message: "All fields are required" });
@@ -17,31 +17,31 @@ const registerUser = async (req, res) => {
 
   try {
     const student = await findBySeatAndDepartment(seatNumber, department);
-    console.log("📌 Student Found:", student);
+    // console.log("📌 Student Found:", student);
 
     if (!student) {
       return res.status(400).json({ message: "Invalid seat number or department" });
     }
 
     if (student.user_id) {
-      console.log("⚠️ Student already linked with user_id:", student.user_id);
+      // console.log("⚠️ Student already linked with user_id:", student.user_id);
       return res.status(400).json({ message: "Account already exists for this student" });
     }
 
     const existingUser = await findByEmail(email);
     if (existingUser) {
-      console.log("⚠️ Email already exists in users table:", existingUser);
+      // console.log("⚠️ Email already exists in users table:", existingUser);
       return res.status(400).json({ message: "Email already registered" });
     }
 
     const hashedPassword = await hashPassword(password);
-    console.log("🔑 Hashed Password Generated");
+    // console.log("🔑 Hashed Password Generated");
 
     const newUserId = await createUser(email, hashedPassword, 3); // role_id = 3 → student
-    console.log("✅ New User Created with ID:", newUserId);
+    // console.log("✅ New User Created with ID:", newUserId);
 
     await updateStudentUserId(student.id, newUserId);
-    console.log(`🔗 Student ID ${student.id} linked with User ID ${newUserId}`);
+    // console.log(`🔗 Student ID ${student.id} linked with User ID ${newUserId}`);
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {

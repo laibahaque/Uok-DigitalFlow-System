@@ -72,20 +72,20 @@ const StudentDashboard = () => {
   const userId = storedUser?.id || null;
 
   useEffect(() => {
-    console.log("🎓 StudentDashboard mounted, userId:", userId);
+    // console.log("🎓 StudentDashboard mounted, userId:", userId);
 
     const fetchProfile = async () => {
-      console.log("🔑 Token being sent:", localStorage.getItem("token"));
+      // console.log("🔑 Token being sent:", localStorage.getItem("token"));
 
       try {
-        console.log("📡 Fetching Student Profile...");
+        // console.log("📡 Fetching Student Profile...");
         const res = await fetch("http://localhost:5000/api/users/student/me", {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("token")}`,
           },
         });
         const data = await res.json();
-        console.log("✅ Profile Data:", data);
+        // console.log("✅ Profile Data:", data);
         if (res.ok) setStudentInfo(data);
       } catch (err) {
         console.error("❌ Error fetching profile:", err);
@@ -95,23 +95,23 @@ const StudentDashboard = () => {
   }, []);
 
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/requests/my", {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+  // useEffect(() => {
+  //   const fetchRequests = async () => {
+  //     try {
+  //       const res = await fetch("http://localhost:5000/api/requests/my", {
+  //         headers: {
+  //           Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 
-          },
-        });
-        const data = await res.json();
-        if (res.ok) setRequests(data);
-      } catch (err) {
-        console.error("Error fetching requests:", err);
-      }
-    };
-    fetchRequests();
-  }, []);
+  //         },
+  //       });
+  //       const data = await res.json();
+  //       if (res.ok) setRequests(data);
+  //     } catch (err) {
+  //       console.error("Error fetching requests:", err);
+  //     }
+  //   };
+  //   fetchRequests();
+  // }, []);
 
   useEffect(() => {
     document.title = "UOK-DFS - Dashboard";
@@ -161,13 +161,13 @@ const StudentDashboard = () => {
         return <Profile profile={studentInfo} userId={userId} />;
 
       case "Proforma Form":
-        return <Proforma userId={userId} studentInfo={studentInfo} />;
+        return <Proforma userId={userId} studentInfo={studentInfo} selectedForm={selectedForm} />;
 
       case "G1 Form":
-        return <G1 userId={userId} studentInfo={studentInfo} />;
+        return <G1 userId={userId} studentInfo={studentInfo} selectedForm={selectedForm} />;
 
       case "Transcript Request":
-        return <Transcript userId={userId} studentInfo={studentInfo} />;
+        return <Transcript userId={userId} studentInfo={studentInfo} selectedForm={selectedForm} />;
 
       case "My Requests":
         return (

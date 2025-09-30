@@ -30,40 +30,40 @@ const TrackingCards = ({ requestId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-useEffect(() => {
-  const fetchLogs = async () => {
-    if (!requestId) return;
+  useEffect(() => {
+    const fetchLogs = async () => {
+      if (!requestId) return;
 
-    setLoading(true);
-    setError("");
+      setLoading(true);
+      setError("");
 
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/requests/logs/${requestId}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/requests/${requestId}/logs`,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+            },
+          }
+        );
 
-      if (!res.ok) throw new Error(`Failed to fetch logs: ${res.status}`);
+        if (!res.ok) throw new Error(`Failed to fetch logs: ${res.status}`);
 
-      const data = await res.json();
-      console.log("API Response:", data);
+        const data = await res.json();
+        console.log("API Response:", data);
 
-      // form_type comes from the backend
-      setFormType(data.form_type || "");
-      setLogs(data.logs || []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load logs. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        setFormType(data.form_type || "");
+        setLogs(data.logs || []);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load logs. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchLogs();
-}, [requestId]);
-
+    fetchLogs();
+  }, [requestId]);
 
   if (loading) return <p>Loading tracking info...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
@@ -74,7 +74,8 @@ useEffect(() => {
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-yellow-800 shadow-md">
         <h3 className="text-lg font-semibold">No Request Found</h3>
         <p className="mt-2 text-sm">
-          You have not submitted any requests yet. Please submit a new request to start tracking.
+          You have not submitted any requests yet. Please submit a new request
+          to start tracking.
         </p>
       </div>
     );
@@ -99,7 +100,8 @@ useEffect(() => {
 
       case "University Approval":
         if (!deptApproved) return "Waiting for faculty admin approval first.";
-        if (!uniApproved && !rejectedLog) return "Requested University Admin for approval.";
+        if (!uniApproved && !rejectedLog)
+          return "Requested University Admin for approval.";
         if (uniApproved) return "University approved your request.";
         if (rejectedLog) return "University rejected your request.";
         return "";
@@ -174,7 +176,9 @@ useEffect(() => {
               {/* Title */}
               <div className="flex items-center gap-2 mb-3">
                 {statusIcon}
-                <h3 className="text-lg font-semibold text-gray-800">{status}</h3>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {status}
+                </h3>
               </div>
 
               {/* Message Section */}
@@ -189,10 +193,10 @@ useEffect(() => {
               {/* Footer Section */}
               <div className="mt-4 flex flex-col items-center gap-2">
                 {/* Date */}
-                {log && log.updated_at && (
+                {log && log.created_at && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
-                    {new Date(log.updated_at).toLocaleDateString()}
+                    {new Date(log.created_at).toLocaleDateString()}
                   </div>
                 )}
 

@@ -13,14 +13,14 @@ const Header = ({ notificationCount = 0 }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    console.log("🔄 Notifications Fetch Start");
-    console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
+    // console.log("🔄 Notifications Fetch Start");
+    // console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
 
 
     // Header.jsx
     const fetchNotifications = async () => {
-      console.log("🔄 Notifications Fetch Start");
-      console.log("🔑 Token being sent:", user?.token);
+      // console.log("🔄 Notifications Fetch Start");
+      // console.log("🔑 Token being sent:", user?.token);
 
       try {
         let url = "";
@@ -40,8 +40,8 @@ const Header = ({ notificationCount = 0 }) => {
         if (!res.ok) throw new Error(`Failed to fetch notifications`);
 
         const data = await res.json();
-        console.log("📡 Notifications API Response:", data);
-        // setNotifications(data.notifications);
+        // console.log("📡 Notifications API Response:", data);
+        setNotifications(data.notifications);
       } catch (error) {
         console.error("❌ Error fetching notifications:", error);
       }
@@ -54,11 +54,11 @@ const Header = ({ notificationCount = 0 }) => {
 
 
   useEffect(() => {
-    console.log("👤 User Context:", user);
+    // console.log("👤 User Context:", user);
     if (!user) return;
 
     const fetchUserData = async () => {
-      console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
+      // console.log("🔑 Token being sent:", sessionStorage.getItem("token"));
 
 
       try {
@@ -80,7 +80,7 @@ const Header = ({ notificationCount = 0 }) => {
         });
 
         const data = await res.json();
-        console.log("✅ User Data:", data);
+        // console.log("✅ User Data:", data);
         if (res.ok) {
           setUserData({
             name: data.full_name || data.name || data.role_name || user.roleName

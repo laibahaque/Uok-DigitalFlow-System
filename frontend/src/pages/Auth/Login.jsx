@@ -33,7 +33,7 @@ const Login = () => {
   // frontend/src/pages/Auth/Login.jsx// Login.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🚀 Login Form Submit:", formData, "Active Tab:", activeTab);
+    // console.log("🚀 Login Form Submit:", formData, "Active Tab:", activeTab);
 
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
@@ -46,9 +46,9 @@ const Login = () => {
         }),
       });
 
-      console.log("📡 Login API Response:", response);
+      // console.log("📡 Login API Response:", response);
       const data = await response.json();
-      console.log("✅ Login Data:", data);
+      // console.log("✅ Login Data:", data);
 
       if (!response.ok) {
         alert(data?.message || "Login failed");
@@ -64,7 +64,7 @@ const Login = () => {
       });
 
 
-      console.log("🔑 User logged in with role:", data.roleSlug);
+      // console.log("🔑 User logged in with role:", data.roleSlug);
 
       if (data.roleSlug === "student") {
         navigate("/dashboard", { replace: true });

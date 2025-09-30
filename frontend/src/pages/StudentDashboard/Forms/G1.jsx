@@ -1,157 +1,349 @@
-import React, { useState } from "react";
+// 📂 src/components/G1Form.jsx
+import React, { useState, useEffect } from "react";
+import jsPDF from "jspdf";
 
-export default function G1Form() {
-  const [formData, setFormData] = useState({
-    serials: [],
-    departmentFrom: "",
-    departmentTo: "",
-    courseNumbers: "",
+export default function G1Form({ userId, studentInfo, selectedForm }) {
+  // -------------------- States --------------------
+  const [form, setForm] = useState({
     name: "",
     fatherName: "",
     seatNo: "",
     department: "",
-    remarks: "",
+    semesters: [],
+    courses: [{ code: "", name: "" }],
   });
 
-  const serialOptions = [
-    "Change the subject (major/minor) from one department to another",
-    "Payment of short of attendance condonation fine Rs.350/- per course",
-    "Attend fresh classes as failed for the 3rd time in each course",
-    "Attend classes (short of attendance) with utilization fee",
-    "Restoration of admission / continuation after gap",
-    "Re-enrolment / extension of re-enrolment",
-    "Special condensed classes (failed 3rd time in one course) Rs.5,000 fine",
-    "Change of subject(s) fine without Dean permission",
-    "National duty attendance exemption (Olympics, Haj, etc.)",
-    "Undertaking for conversion from Honours to Pass",
-    "Permission for Thesis / Project at departmental level",
-    "Change of Compulsory Urdu to other subject",
-    "One-Time Special Examination permission",
-    "Permission as Repeater / Improvement course",
-    "Cancellation of attempted course as improvement",
-    "Restoration of previous marks after improvement",
-    "Name not in Seat List – Seat allocation required",
-    "Proforma not received as repeater / regular semester",
-    "Correction in Marks Sheet / Proforma",
-    "Other permission (please specify)",
-  ];
+  const [maxSemester, setMaxSemester] = useState(0);
+  const [errors, setErrors] = useState({});
+  const [voucherGenerated, setVoucherGenerated] = useState(false);
+  const [paidSlip, setPaidSlip] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [submitEnabled, setSubmitEnabled] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState([]);
 
-  const handleCheckboxChange = (index) => {
-    setFormData((prev) => {
-      const newSerials = prev.serials.includes(index)
-        ? prev.serials.filter((i) => i !== index)
-        : [...prev.serials, index];
-      return { ...prev, serials: newSerials };
-    });
+  const courseFee = 1500;
+  const maxCourses = 3;
+
+  // -------------------- Hooks --------------------
+  useEffect(() => {
+    setSubmitEnabled(voucherGenerated && paidSlip !== null);
+  }, [voucherGenerated, paidSlip]);
+
+  // populate student info
+  useEffect(() => {
+    if (studentInfo) {
+      setForm((prev) => ({
+        ...prev,
+        name: studentInfo.full_name || "",
+        fatherName: studentInfo.father_name || "",
+        seatNo: studentInfo.seat_number || "",
+        department: studentInfo.department || "",
+      }));
+      setMaxSemester(studentInfo.current_sem_no || 0);
+    }
+  }, [studentInfo]);
+
+  // -------------------- Handlers --------------------
+  const updateField = (key, val) =>
+    setForm((prev) => ({ ...prev, [key]: val }));
+
+  const handleSemesterChange = async (sem) => {
+    let updated = [...form.semesters];
+    if (updated.includes(sem)) {
+      updated = updated.filter((s) => s !== sem);
+    } else {
+      updated.push(sem);
+    }
+    updateField("semesters", updated);
+
+    if (!updated.includes(sem)) return; // skip if unchecked
+    try {
+      const res = await fetch(`http://localhost:5000/api/courses/${userId}/${sem}`);
+      const data = await res.json();
+      setAvailableCourses(data);
+    } catch (err) {
+      console.error("Failed to fetch courses:", err);
+    }
   };
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleCourseChange = (index, field, value) => {
+    const updatedCourses = [...form.courses];
+    updatedCourses[index][field] = value;
+    setForm((prev) => ({ ...prev, courses: updatedCourses }));
   };
 
-  const handleSubmit = (e) => {
+  const addCourse = () => {
+    if (form.courses.length < maxCourses) {
+      setForm((prev) => ({
+        ...prev,
+        courses: [...prev.courses, { code: "", name: "" }],
+      }));
+    } else {
+      alert("⚠️ Max 3 courses allowed.");
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && !["image/jpeg", "image/jpg"].includes(file.type)) {
+      setErrorMessage("⚠️ Only JPG/JPEG format allowed");
+      setPaidSlip(null);
+      return;
+    }
+    setErrorMessage("");
+    setPaidSlip(file);
+  };
+
+  // -------------------- Validation --------------------
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.name) newErrors.name = "Student name required";
+    if (!form.seatNo) newErrors.seatNo = "Seat no required";
+    if (!form.department) newErrors.department = "Department required";
+    if (!form.semesters.length) newErrors.semesters = "Select at least one semester";
+    if (!form.courses.length) newErrors.courses = "Add at least one course";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // -------------------- Voucher --------------------
+  const generateVoucher = () => {
+    if (!validateForm()) return;
+
+    const totalFee = form.courses.length * courseFee;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("University of Karachi - G1 Voucher", 20, 20);
+    doc.setFontSize(12);
+    doc.text(`Student Name: ${form.name}`, 20, 40);
+    doc.text(`Seat No: ${form.seatNo}`, 20, 50);
+    doc.text(`Department: ${form.department}`, 20, 60);
+    doc.text(`Semesters: ${form.semesters.join(", ")}`, 20, 70);
+    form.courses.forEach((c, i) =>
+      doc.text(`Course ${i + 1}: ${c.code} - ${c.name}`, 20, 80 + i * 10)
+    );
+    doc.text(`Total Fee: Rs. ${totalFee}`, 20, 120);
+    doc.save("G1Voucher.pdf");
+
+    setVoucherGenerated(true);
+    alert("✅ Voucher generated! Now upload slip & submit form.");
+  };
+
+  // -------------------- Submit --------------------
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Data Submitted:", formData);
-    alert("Form submitted! Check console for data.");
+    if (!validateForm()) return;
+
+    if (!paidSlip) {
+      setErrorMessage("Please upload paid slip first");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("paidSlip", paidSlip);
+    formData.append("form_type", selectedForm);
+    formData.append("sem_num", form.semesters.join(","));
+    formData.append("courses", JSON.stringify(form.courses));
+
+    try {
+      const res = await fetch("http://localhost:5000/api/requests/g1form", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ ${selectedForm} submitted successfully`);
+        window.location.href = "/dashboard";
+      } else {
+        setErrorMessage(data.message || "Submission failed");
+      }
+    } catch (err) {
+      console.error("Error submitting G1:", err);
+      setErrorMessage("Server error while submitting form");
+    }
   };
 
+  // -------------------- Styles --------------------
+  const inputClass =
+    "w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:ring-2 focus:ring-blue-400 focus:outline-none";
+  const errorClass = "text-red-600 text-sm mt-1";
+
+  // -------------------- JSX --------------------
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-2xl font-bold text-center mb-6">University of Karachi - Form G-1</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        
-        {/* Serial Selection */}
-        <div>
-          <h2 className="font-semibold mb-2">Select Relevant Serial(s)</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto border p-3 rounded">
-            {serialOptions.map((option, idx) => (
-              <label key={idx} className="flex items-start space-x-2">
+    <div className="w-full bg-gradient-to-br from-blue-50 to-white p-6">
+      <div className="text-center border-b pb-4 mb-6">
+        <h1 className="text-3xl font-bold tracking-wide text-blue-700 uppercase">
+          University Of Karachi
+        </h1>
+        <p className="text-red-600 text-base mt-1">Application for Form G-1</p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-6xl mx-auto bg-white/90 shadow-md rounded p-8 space-y-6"
+      >
+        {/* Student Info */}
+        <section>
+          <h2 className="text-lg font-semibold text-blue-700 border-b pb-2 mb-4">
+            Student Information
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label>Name</label>
+              <input
+                value={form.name}
+                readOnly
+                className="bg-blue-100 cursor-not-allowed w-full px-2 py-2 rounded border-none focus:outline-none"
+              />
+              {errors.name && <p className={errorClass}>{errors.name}</p>}
+            </div>
+            <div>
+              <label>Father's Name</label>
+              <input
+                value={form.fatherName}
+                onChange={(e) => updateField("fatherName", e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label>Seat No</label>
+              <input
+                value={form.seatNo}
+                readOnly
+                className="bg-blue-100 cursor-not-allowed w-full px-2 py-2 rounded border-none focus:outline-none"
+              />
+              {errors.seatNo && <p className={errorClass}>{errors.seatNo}</p>}
+            </div>
+            <div>
+              <label>Department</label>
+              <input
+                value={form.department}
+                readOnly
+                className="bg-blue-100 cursor-not-allowed w-full px-2 py-2 rounded border-none focus:outline-none"
+              />
+              {errors.department && <p className={errorClass}>{errors.department}</p>}
+            </div>
+          </div>
+        </section>
+
+        {/* Semester Selection */}
+        <section>
+          <h2 className="text-lg font-semibold text-blue-700 border-b pb-2 mb-4">
+            Semester Selection
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {Array.from({ length: maxSemester }, (_, i) => (
+              <label key={i} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.serials.includes(idx)}
-                  onChange={() => handleCheckboxChange(idx)}
-                  className="mt-1"
+                  checked={form.semesters.includes(i + 1)}
+                  onChange={() => handleSemesterChange(i + 1)}
                 />
-                <span>{option}</span>
+                <span>Semester {i + 1}</span>
               </label>
             ))}
           </div>
+          {errors.semesters && <p className={errorClass}>{errors.semesters}</p>}
+        </section>
+
+        {/* Courses */}
+        <section>
+          <h2 className="text-lg font-semibold text-blue-700 border-b pb-2 mb-4">
+            Courses
+          </h2>
+
+          {form.courses.map((c, idx) => (
+            <div key={idx} className="grid grid-cols-2 gap-4 mb-2">
+              <select
+                value={c.code}
+                onChange={(e) => {
+                  const selected = availableCourses.find(
+                    (course) => course.course_code === e.target.value
+                  );
+                  if (selected) {
+                    handleCourseChange(idx, "code", selected.course_code);
+                    handleCourseChange(idx, "name", selected.course_name);
+                  }
+                }}
+                className={inputClass}
+              >
+                <option value="">Select Course</option>
+                {availableCourses.map((course) => (
+                  <option key={course.id} value={course.course_code}>
+                    {course.course_code} - {course.course_name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="text"
+                value={c.name}
+                readOnly
+                className="bg-blue-100 cursor-not-allowed w-full px-2 py-2 rounded border-none focus:outline-none"
+              />
+            </div>
+          ))}
+
+          {form.courses.length < maxCourses && (
+            <button
+              type="button"
+              onClick={addCourse}
+              className="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              + Add Course
+            </button>
+          )}
+          {errors.courses && <p className={errorClass}>{errors.courses}</p>}
+        </section>
+
+        {/* Paid Slip Upload */}
+        {voucherGenerated && (
+          <section>
+            <h2 className="text-lg font-semibold text-blue-700 border-b pb-2 mb-4">
+              Upload Paid Slip
+            </h2>
+            <input
+              type="file"
+              accept=".jpg,.jpeg"
+              onChange={handleFileChange}
+              className={inputClass}
+            />
+          </section>
+        )}
+
+        {errorMessage && (
+          <p className="text-center text-red-600 font-medium">{errorMessage}</p>
+        )}
+
+        {/* Buttons */}
+        <div className="text-center space-x-4">
+          <button
+            type="submit"
+            disabled={!submitEnabled}
+            className={`px-6 py-2 rounded shadow-md ${
+              submitEnabled
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-400 text-gray-200 cursor-not-allowed"
+            }`}
+          >
+            Submit Form
+          </button>
+
+          <button
+            type="button"
+            onClick={generateVoucher}
+            disabled={voucherGenerated}
+            className={`px-6 py-2 rounded shadow-md ${
+              voucherGenerated
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                : "bg-green-600 text-white hover:bg-green-700"
+            }`}
+          >
+            Generate Voucher
+          </button>
         </div>
-
-        {/* Department Change Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            name="departmentFrom"
-            value={formData.departmentFrom}
-            onChange={handleChange}
-            placeholder="From Department"
-            className="border p-2 rounded w-full"
-          />
-          <input
-            type="text"
-            name="departmentTo"
-            value={formData.departmentTo}
-            onChange={handleChange}
-            placeholder="To Department"
-            className="border p-2 rounded w-full"
-          />
-        </div>
-
-        {/* Student Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Student Name"
-            className="border p-2 rounded w-full"
-          />
-          <input
-            type="text"
-            name="fatherName"
-            value={formData.fatherName}
-            onChange={handleChange}
-            placeholder="Father's Name"
-            className="border p-2 rounded w-full"
-          />
-          <input
-            type="text"
-            name="seatNo"
-            value={formData.seatNo}
-            onChange={handleChange}
-            placeholder="Seat Number"
-            className="border p-2 rounded w-full"
-          />
-        </div>
-
-        <input
-          type="text"
-          name="department"
-          value={formData.department}
-          onChange={handleChange}
-          placeholder="Department"
-          className="border p-2 rounded w-full"
-        />
-
-        {/* Remarks */}
-        <textarea
-          name="remarks"
-          value={formData.remarks}
-          onChange={handleChange}
-          placeholder="Remarks / Other Details"
-          className="border p-2 rounded w-full"
-          rows="3"
-        ></textarea>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-        >
-          Submit Form
-        </button>
       </form>
     </div>
   );

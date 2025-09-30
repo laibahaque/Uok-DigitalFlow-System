@@ -8,6 +8,7 @@ const attendanceRoutes = require("./routes/attendanceRoute");
 const resultsRoutes = require("./routes/resultsRoutes");
 const semesterPaymentsRoutes = require("./routes/semesterPaymentsRoute");
 const requestRoutes = require("./routes/requestRoutes");
+const coursesRoutes = require("./routes/coursesRoutes");
 dotenv.config();
 const app = express();
 
@@ -21,6 +22,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/results", resultsRoutes);
 app.use("/api/semester_payments", semesterPaymentsRoutes);
 app.use("/api/requests", requestRoutes);
+app.use("/api/courses", coursesRoutes);
 app.get("/", (req, res) => res.send("✅ Backend is running..."));
 
 module.exports = app;

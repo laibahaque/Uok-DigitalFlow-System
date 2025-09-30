@@ -8,6 +8,7 @@ const {
   getMyRequests,
   submitTranscriptRequest,
   checkDuplicateTranscript,
+  submitG1Request,
 } = require("../controllers/requestController");
 
 router.get("/my", verifyToken, authorizeRoles("student"), getMyRequests);
@@ -17,6 +18,7 @@ router.post("/proforma", verifyToken, authorizeRoles("student"), submitProformaR
 
 // 📌 Get logs for a request
 router.get("/:requestId/logs", verifyToken, getRequestLogs);
+router.post("/g1form", verifyToken, submitG1Request);
 
 // 📌 Check duplicate Regular request
 router.post("/check-regular", verifyToken, checkDuplicateRegular);

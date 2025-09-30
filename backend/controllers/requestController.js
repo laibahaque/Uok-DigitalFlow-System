@@ -175,7 +175,36 @@ const checkDuplicateTranscript = async (req, res) => {
     return res.status(500).json({ message: "Server error while checking duplicate transcript" });
   }
 };
+const submitG1Request = async (req, res) => {
+  try {
+    const { form_type, sem_num, courses } = req.body;
+    const loggedInUserId = req.user.id;
 
+    console.log("🔥 submitG1Request called by user:", loggedInUserId);
+
+    // get student_id from DB
+    const studentResult = await Requests.getStudentIdByUserId(loggedInUserId);
+    if (!studentResult) return res.status(404).json({ message: "Student not found" });
+
+    const student_id = studentResult.id;
+
+    // save courses JSON string
+    const coursesJSON = JSON.stringify(courses);
+
+    const requestId = await Requests.createFormRequest({
+      student_id,
+      form_type,
+      sem_num,
+      courses: coursesJSON,   // 👈 pass courses
+      exam_type: null         // not required for G-1
+    });
+
+    res.status(201).json({ message: "G-1 Form submitted successfully", requestId });
+  } catch (err) {
+    console.error("❌ submitG1Request error:", err);
+    res.status(500).json({ message: "Server error while submitting G-1 form" });
+  }
+};
 
 module.exports = {
   submitProformaRequest,
@@ -184,4 +213,5 @@ module.exports = {
   getMyRequests,
   submitTranscriptRequest,
   checkDuplicateTranscript,
+  submitG1Request,
 };

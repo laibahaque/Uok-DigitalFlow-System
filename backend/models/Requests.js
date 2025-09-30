@@ -9,8 +9,8 @@ const getStudentIdByUserId = async (userId) => {
   return rows[0]?.id || null;
 };
 
-// 📌 2. Create Form Request (now always saves students.id)
-const createFormRequest = async (loggedInUserId, formType, semNum, examType) => {
+// 📌 2. Create Form Request (dynamic for each form type)
+const createFormRequest = async (loggedInUserId, formType, semNum = null, examType = null) => {
   const studentId = await getStudentIdByUserId(loggedInUserId);
   console.log("🔎 LoggedInUserId:", loggedInUserId);
   console.log("🔎 StudentId from DB:", studentId);
@@ -19,11 +19,17 @@ const createFormRequest = async (loggedInUserId, formType, semNum, examType) => 
     throw new Error("❌ Student record not found for this user.");
   }
 
+  // 🔥 Dynamic INSERT
   const [result] = await db.execute(
-    `INSERT INTO requests
-        (student_id, form_type, sem_num, exam_type, status, updated_at, created_at)
-     VALUES (?, ?, ?, ?, 'Pending', NOW(), NOW())`,
-    [studentId, formType, semNum, examType]
+    `INSERT INTO requests 
+       (student_id, form_type, sem_num, exam_type, status, updated_at, created_at)
+     VALUES (?, ?, ?, ?, 'Submitted', NOW(), NOW())`,
+    [
+      studentId,
+      formType,
+      semNum || null,      // agar undefined/empty hai to null bhejna
+      examType || null
+    ]
   );
 
   console.log("✅ Inserted Request ID:", result.insertId);
@@ -93,10 +99,25 @@ const getMyRequestsFromModel = async (req, res) => {
     throw err;
   }
 };
+
+const checkExistingTranscriptRequest = async (loggedInUserId) => {
+  const studentId = await getStudentIdByUserId(loggedInUserId);
+  if (!studentId) return false;
+
+  const [rows] = await db.query(
+    `SELECT id FROM requests
+       WHERE student_id = ? AND form_type = 'Transcript Request'`,
+    [studentId]
+  );
+
+  return rows.length > 0;
+};
+
 module.exports = {
   createFormRequest,
   createRequestLog,
   getLogsByRequest,
   checkExistingRegularRequest,
   getMyRequestsFromModel,
+  checkExistingTranscriptRequest,
 };

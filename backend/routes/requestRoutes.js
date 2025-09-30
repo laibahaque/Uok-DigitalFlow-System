@@ -6,6 +6,8 @@ const {
   getRequestLogs,
   checkDuplicateRegular,
   getMyRequests,
+  submitTranscriptRequest,
+  checkDuplicateTranscript,
 } = require("../controllers/requestController");
 
 router.get("/my", verifyToken, authorizeRoles("student"), getMyRequests);
@@ -18,7 +20,13 @@ router.get("/:requestId/logs", verifyToken, getRequestLogs);
 
 // 📌 Check duplicate Regular request
 router.post("/check-regular", verifyToken, checkDuplicateRegular);
-
+router.post("/check-transcript", verifyToken, checkDuplicateTranscript);
+router.post(
+  "/transcript",
+  verifyToken,
+  authorizeRoles("student"),
+  submitTranscriptRequest
+);
 
 
 module.exports = router;

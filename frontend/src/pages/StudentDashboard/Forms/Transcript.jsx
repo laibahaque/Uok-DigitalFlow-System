@@ -16,6 +16,7 @@ const Transcript = ({ userId, studentInfo }) => {
   const [errors, setErrors] = useState({});
   const [voucherGenerated, setVoucherGenerated] = useState(false);
   const [submitEnabled, setSubmitEnabled] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const updateField = (key, val) =>
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -55,42 +56,80 @@ const Transcript = ({ userId, studentInfo }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const payload = {
-      ...form,
-      submittedAt: new Date().toISOString(),
-      status: "Pending Department Approval",
-      totalFee: 1100, // fixed fee
-    };
+    try {
+      const res = await fetch("http://localhost:5000/api/requests/transcript", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          department: form.department,
+          program: form.program,
+        }),
+      });
 
-    console.log("Transcript submitted payload:", payload);
-    alert("✅ Transcript form submitted (check console). Replace with API call.");
+      const data = await res.json();
+      if (res.ok) {
+        alert("✅ Transcript submitted successfully!");
+        console.log("Transcript Request ID:", data.requestId);
+        window.location.href = "/dashboard";     // 👈 add this
+      } else {
+        alert(`❌ ${data.message}`);
+      }
+
+    } catch (err) {
+      console.error("Submit Transcript Error:", err);
+      alert("❌ Server error while submitting transcript.");
+    }
   };
 
-  const generateVoucher = () => {
+  const generateVoucher = async () => {
     if (!form.fullname || !form.seatNo || !form.department) {
       alert("⚠️ Fill required fields before generating voucher!");
       return;
     }
 
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("University of Karachi - Transcript Fee Voucher", 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Full Name: ${form.fullname}`, 20, 40);
-    doc.text(`Seat No: ${form.seatNo}`, 20, 50);
-    doc.text(`Department: ${form.department}`, 20, 60);
-    doc.text(`Program: ${form.program}`, 20, 70);
-    doc.text(`Transcript Fee: Rs 1100`, 20, 90);
-    doc.text("Please upload paid slip image after generating voucher.", 20, 100);
-    doc.save("TranscriptFeeVoucher.pdf");
+    try {
+      // 🔎 check backend for duplicate transcript
+      const res = await fetch("http://localhost:5000/api/requests/check-transcript", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({}),  // transcript ke liye extra field nahi chahiye
+      });
 
-    setVoucherGenerated(true);
-    alert("✅ Voucher generated! Now upload your paid slip to enable submission.");
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.message);
+        return;
+      }
+
+      // ✅ voucher generate karein agar duplicate nahi mila
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("University of Karachi - Transcript Fee Voucher", 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Full Name: ${form.fullname}`, 20, 40);
+      doc.text(`Seat No: ${form.seatNo}`, 20, 50);
+      doc.text(`Department: ${form.department}`, 20, 60);
+      doc.text(`Program: ${form.program}`, 20, 70);
+      doc.text(`Transcript Fee: Rs 1100`, 20, 90);
+      doc.text("Please upload paid slip image after generating voucher.", 20, 100);
+      doc.save("TranscriptFeeVoucher.pdf");
+
+      setVoucherGenerated(true);
+      alert("✅ Voucher generated! Now upload your paid slip to enable submission.");
+    } catch (err) {
+      console.error("Voucher generation error:", err);
+      alert("❌ Server error while generating voucher.");
+    }
   };
 
   const inputClass =
@@ -220,17 +259,21 @@ const Transcript = ({ userId, studentInfo }) => {
             {errors.paidSlip && <p className={errorClass}>{errors.paidSlip}</p>}
           </section>
         )}
+        {errorMessage && (
+          <div className="text-center text-red-600 font-medium mt-3">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="text-center space-x-4">
           <button
             type="submit"
             disabled={!submitEnabled}
-            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${
-              submitEnabled
-                ? "bg-green-600 text-white hover:bg-green-700 hover:shadow-lg"
-                : "bg-gray-400 text-gray-200 cursor-not-allowed"
-            }`}
+            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${submitEnabled
+              ? "bg-green-600 text-white hover:bg-green-700 hover:shadow-lg"
+              : "bg-gray-400 text-gray-200 cursor-not-allowed"
+              }`}
           >
             Submit Transcript
           </button>
@@ -238,11 +281,10 @@ const Transcript = ({ userId, studentInfo }) => {
             type="button"
             onClick={generateVoucher}
             disabled={voucherGenerated}
-            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${
-              voucherGenerated
-                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg"
-            }`}
+            className={`font-medium px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105 ${voucherGenerated
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg"
+              }`}
           >
             Generate Voucher
           </button>

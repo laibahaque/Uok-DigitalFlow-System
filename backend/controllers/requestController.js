@@ -4,6 +4,7 @@ const {
   getLogsByRequest,
   checkExistingRegularRequest,
   getMyRequestsFromModel,
+  checkExistingTranscriptRequest,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -103,7 +104,7 @@ const checkDuplicateRegular = async (req, res) => {
   }
 };
 const getMyRequests = async (req, res) => {
-    console.log("🔥 getMyRequests controller reached, user:", req.user);
+  console.log("🔥 getMyRequests controller reached, user:", req.user);
   try {
     const data = await getMyRequestsFromModel(req, res);
     // Model already sends response, no need to send again
@@ -112,10 +113,75 @@ const getMyRequests = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching requests" });
   }
 };
+// 📌 Submit Transcript Request
+const submitTranscriptRequest = async (req, res) => {
+  try {
+    const studentId = req.user.id; // ✅ Logged in user id
+    const { department, program } = req.body;
+
+    if (!department || !program) {
+      return res.status(400).json({ message: "⚠️ Missing required fields!" });
+    }
+    const alreadyExists = await checkExistingTranscriptRequest(studentId);
+    if (alreadyExists) {
+      return res.status(400).json({
+        message: "❌ You have already submitted the Transcript request."
+      });
+    }
+
+    // 1️⃣ Create Request
+    const requestId = await createFormRequest(
+      studentId,
+      "Transcript Request",   // form_type fixed for transcript
+      null,                   // sem_num not needed
+      null                    // exam_type not needed
+    );
+
+    // 2️⃣ Create Log
+    await createRequestLog(requestId, "Submitted", studentId);
+
+    // 3️⃣ Notification
+    await createNotification(
+      studentId,
+      "Transcript Request Submitted ✅",
+      "Your transcript request has been submitted successfully."
+    );
+
+    res.status(201).json({
+      message: "✅ Transcript request submitted!",
+      requestId
+    });
+
+  } catch (err) {
+    console.error("submitTranscriptRequest error:", err);
+    res.status(500).json({ message: "❌ Server error while submitting transcript" });
+  }
+};
+// 📌 Check Duplicate Transcript Request
+const checkDuplicateTranscript = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    const alreadyExists = await checkExistingTranscriptRequest(studentId);
+    if (alreadyExists) {
+      return res.status(400).json({
+        message: "❌ You have already submitted the Transcript request."
+      });
+    }
+
+    return res.status(200).json({ message: "✅ No conflict, you can proceed." });
+  } catch (err) {
+    console.error("checkDuplicateTranscript error:", err);
+    return res.status(500).json({ message: "Server error while checking duplicate transcript" });
+  }
+};
+
 
 module.exports = {
   submitProformaRequest,
   getRequestLogs,
   checkDuplicateRegular,
   getMyRequests,
+  submitTranscriptRequest,
+  checkDuplicateTranscript,
 };

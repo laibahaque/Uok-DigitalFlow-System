@@ -166,6 +166,39 @@ const submitG1Request = async (req, res) => {
     return res.status(500).json({ message: "❌ Server error while submitting G1" });
   }
 };
+// 📌 Fetch all Submitted Requests with student + department info
+const getSubmittedRequestsFromModel = async () => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT 
+          r.id AS request_id,
+          r.form_type,
+          r.sem_num,
+          r.exam_type,
+          c.course_code AS course_code,
+          c.course_name AS course_name,
+          r.status AS request_status,
+          r.created_at,
+          s.id AS student_id,
+          s.seat_no,
+          s.program,
+          d.depart_name AS department_name
+      FROM requests r
+      JOIN students s ON r.student_id = s.id
+      JOIN departments_sci d ON s.depart_id = d.id
+      LEFT JOIN courses c ON r.course_id = c.id   -- ✅ join courses
+      WHERE r.status = 'Submitted'
+      ORDER BY r.created_at DESC
+    `);
+
+    return rows;
+  } catch (err) {
+    console.error("❌ DB Error in getSubmittedRequestsFromModel:", err);
+    throw err;
+  }
+};
+
+
 
 
 module.exports = {
@@ -175,4 +208,5 @@ module.exports = {
   checkExistingRegularRequest,
   getMyRequestsFromModel,
   checkExistingTranscriptRequest,
+  getSubmittedRequestsFromModel,
 };

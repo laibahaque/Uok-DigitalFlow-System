@@ -9,6 +9,7 @@ const {
   submitTranscriptRequest,
   checkDuplicateTranscript,
   submitG1Request,
+  getSubmittedRequests ,
 } = require("../controllers/requestController");
 
 router.get("/my", verifyToken, authorizeRoles("student"), getMyRequests);
@@ -30,6 +31,11 @@ router.post(
   authorizeRoles("student"),
   submitTranscriptRequest
 );
-
+router.get(
+  "/submitted",
+  verifyToken,
+  authorizeRoles("faculty-admin"), // ya jo admin role ho
+  getSubmittedRequests
+);
 
 module.exports = router;

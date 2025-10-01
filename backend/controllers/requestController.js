@@ -5,6 +5,7 @@ const {
   checkExistingRegularRequest,
   getMyRequestsFromModel,
   checkExistingTranscriptRequest,
+  getSubmittedRequestsFromModel ,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -231,6 +232,15 @@ const submitG1Request = async (req, res) => {
   }
 };
 
+const getSubmittedRequests = async (req, res) => {
+  try {
+    const data = await getSubmittedRequestsFromModel();
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error("❌ getSubmittedRequests error:", err);
+    return res.status(500).json({ message: "Server error while fetching submitted requests" });
+  }
+};
 
 module.exports = {
   submitProformaRequest,
@@ -240,4 +250,5 @@ module.exports = {
   submitTranscriptRequest,
   checkDuplicateTranscript,
   submitG1Request,
+  getSubmittedRequests,
 };

@@ -13,6 +13,7 @@ import {
 import CS from "./Departments/CS";
 import Zoology from "./Departments/Zoology";
 import AppliedPhysics from "./Departments/AP";
+import Requests from "./Requests";
 
 const FacultyAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -97,6 +98,8 @@ const FacultyAdminDashboard = () => {
 
 
 
+      case "Requests":
+        return <Requests />;
 
       // ✅ Show CS Page
       case "Computer Science":

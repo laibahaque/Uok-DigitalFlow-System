@@ -1,86 +1,143 @@
-// import React, { useEffect, useState } from "react";
-// import axios from "axios";
+// frontend/src/pages/FacultyAdmin/Requests.jsx
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-// const Request = () => {
-//   const [requests, setRequests] = useState([]);
-//   const [loading, setLoading] = useState(true);
+const Requests = () => {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        const fetchRequests = async () => {
+            try {
+                const user = JSON.parse(sessionStorage.getItem("user"));
+                const token = user?.token;
 
+                if (!token) return;
 
-// useEffect(() => {
-//   const fetchRequests = async () => {
-//     try {
-//       console.log("📡 Fetching requests...");
-//       const user = JSON.parse(localStorage.getItem("user"));
-//       const token = user?.token;
-//       console.log("Token:", token);
+                const res = await axios.get(
+                    "http://localhost:5000/api/requests/submitted",
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
 
-//       if (!token) {
-//         console.error("⚠️ No token found. Please log in again.");
-//         return;
-//       }
+                setRequests(res.data);
+            } catch (err) {
+                console.error("Error fetching requests:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-//       const res = await axios.get("http://localhost:5000/api/requests/all", {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
+        fetchRequests();
+    }, []);
 
-//       console.log("✅ Response:", res.data);
-//       setRequests(res.data);
-//     } catch (err) {
-//       console.error("❌ Error fetching requests:", err);
-//     } finally {
-//       console.log("⏳ Setting loading to false");
-//       setLoading(false);
-//     }
-//   };
+    // ✅ Update status function
+    const handleStatusChange = async (id, status) => {
+        try {
+            const user = JSON.parse(sessionStorage.getItem("user"));
+            const token = user?.token;
 
-//   fetchRequests();
-// }, []);
+            await axios.put(
+                `http://localhost:5000/api/requests/${id}`,
+                { status },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
+            // Local update
+            setRequests((prev) =>
+                prev.map((req) =>
+                    req.request_id === id ? { ...req, request_status: status } : req
+                )
+            );
+        } catch (err) {
+            console.error("Error updating request:", err);
+        }
+    };
 
-//   if (loading) return <p>Loading requests...</p>;
+    if (loading)
+        return (
+            <p className="text-center text-gray-600 py-10 text-lg animate-pulse">
+                Loading requests...
+            </p>
+        );
 
-//   return (
-//     <div className="bg-white shadow-xl rounded-lg p-6">
-//       <h2 className="text-2xl font-extrabold text-center text-red-700 mb-6">
-//         Student Requests
-//       </h2>
+    return (
+        <div className="p-6">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">
+                📋 Submitted Requests
+            </h2>
 
-//       <div className="overflow-x-auto rounded-lg shadow-md">
-//         <table className="w-full text-sm text-left border border-gray-200">
-//           <thead className="bg-green-100 text-green-800 uppercase text-sm font-semibold">
-//             <tr>
-//               <th className="px-4 py-3 border">Request Type</th>
-//               <th className="px-4 py-3 border">Seat No</th>
-//               <th className="px-4 py-3 border">Program</th>
-//               <th className="px-4 py-3 border">Department</th>
-//               <th className="px-4 py-3 border">Status</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {requests.length > 0 ? (
-//               requests.map((req, idx) => (
-//                 <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-//                   {/* ✅ Use `form_type` instead of request_type */}
-//                   <td className="px-4 py-2 border">{req.form_type}</td>
-//                   <td className="px-4 py-2 border">{req.seat_no}</td>
-//                   <td className="px-4 py-2 border">{req.program}</td>
-//                   <td className="px-4 py-2 border">{req.depart_name}</td>
-//                   <td className="px-4 py-2 border">{req.current_status || "Pending"}</td>
-//                 </tr>
-//               ))
-//             ) : (
-//               <tr>
-//                 <td colSpan="5" className="text-center text-gray-500 py-6 italic">
-//                   No requests found.
-//                 </td>
-//               </tr>
-//             )}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// };
+            {requests.length === 0 ? (
+                <p className="text-gray-600 text-center py-6 text-lg">
+                    No requests found.
+                </p>
+            ) : (
+                <div className="overflow-x-auto rounded-2xl shadow-md border">
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="bg-green-600 text-white">
+                                <th className="px-6 py-3 text-left">Form Type</th>
+                                <th className="px-6 py-3 text-left">Seat No</th>
+                                <th className="px-6 py-3 text-left">Program</th>
+                                <th className="px-6 py-3 text-left">Department</th>
+                                <th className="px-6 py-3 text-left">Semester</th>
+                                <th className="px-6 py-3 text-left">Course Code</th>
+                                <th className="px-6 py-3 text-left">Course Name</th>
+                                <th className="px-6 py-3 text-left">Status</th>
+                                <th className="px-6 py-3 text-left">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {requests.map((req, i) => (
+                                <tr
+                                    key={req.request_id}
+                                    className={`transition duration-200 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                        } hover:bg-green-50`}
+                                >
+                                    <td className="px-6 py-3">{req.form_type}</td>
+                                    <td className="px-6 py-3">{req.seat_no}</td>
+                                    <td className="px-6 py-3">{req.program}</td>
+                                    <td className="px-6 py-3">{req.department_name}</td>
+                                    <td className="px-6 py-3">{req.sem_num || "-"}</td>         {/* ✅ Semester */}
+                                    <td className="px-6 py-3">{req.course_code || "-"}</td>    {/* ✅ Course Code */}
+                                    <td className="px-6 py-3">{req.course_name || "-"}</td>
+                                    <td
+                                        className={`px-6 py-3 font-semibold ${req.request_status === "Approved"
+                                            ? "text-green-600"
+                                            : req.request_status === "Rejected"
+                                                ? "text-red-600"
+                                                : "text-yellow-600"
+                                            }`}
+                                    >
+                                        {req.request_status}
+                                    </td>
+                                    <td className="px-6 py-3 flex gap-2">
+                                        <button
+                                            onClick={() =>
+                                                handleStatusChange(req.request_id, "Approved")
+                                            }
+                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm"
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                handleStatusChange(req.request_id, "Rejected")
+                                            }
+                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
+                                        >
+                                            Reject
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+};
 
-// export default Request;
+export default Requests;

@@ -21,7 +21,14 @@ const Requests = () => {
                     }
                 );
 
-                setRequests(res.data);
+                // 🔥 Sorting logic yahan
+                const sortedRequests = res.data.sort((a, b) => {
+                    if (a.request_status === "Submitted" && b.request_status !== "Submitted") return -1;
+                    if (a.request_status !== "Submitted" && b.request_status === "Submitted") return 1;
+                    return new Date(b.created_at) - new Date(a.created_at); // latest first
+                });
+
+                setRequests(sortedRequests);
             } catch (err) {
                 console.error("Error fetching requests:", err);
             } finally {
@@ -31,6 +38,7 @@ const Requests = () => {
 
         fetchRequests();
     }, []);
+
 
     // ✅ Update status function
     const handleStatusChange = async (id, status) => {
@@ -43,7 +51,11 @@ const Requests = () => {
 
             setRequests(prev =>
                 [...prev.map(r => r.request_id === id ? { ...r, request_status: status } : r)]
-                    .sort((a, b) => a.request_status === "Submitted" ? -1 : 1)
+                    .sort((a, b) => {
+                        if (a.request_status === "Submitted" && b.request_status !== "Submitted") return -1;
+                        if (a.request_status !== "Submitted" && b.request_status === "Submitted") return 1;
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    })
             );
 
 
@@ -126,7 +138,7 @@ const Requests = () => {
                                                         Reject
                                                     </button>
                                                 </>
-                                            ) : req.request_status === "Accepted" ? (
+                                            ) : req.request_status === "Approved" ? (
                                                 <button
                                                     disabled
                                                     className="px-3 py-1 rounded-lg text-sm bg-green-300 cursor-not-allowed text-white"

@@ -9,7 +9,6 @@ const getStudentIdByUserId = async (userId) => {
   return rows[0]?.id || null;
 };
 
-// 📌 2. Create Form Request (dynamic for each form type)
 // 📌 Create Form Request (dynamic for each form type)
 const createFormRequest = async (
   loggedInUserId,
@@ -186,8 +185,7 @@ const getSubmittedRequestsFromModel = async () => {
       FROM requests r
       JOIN students s ON r.student_id = s.id
       JOIN departments_sci d ON s.depart_id = d.id
-      LEFT JOIN courses c ON r.course_id = c.id   -- ✅ join courses
-      WHERE r.status = 'Submitted'
+      LEFT JOIN courses c ON r.course_id = c.id
       ORDER BY r.created_at DESC
     `);
 
@@ -197,6 +195,7 @@ const getSubmittedRequestsFromModel = async () => {
     throw err;
   }
 };
+
 
 const getApprovedRequestsFromModel = async (formType = null) => {
   try {

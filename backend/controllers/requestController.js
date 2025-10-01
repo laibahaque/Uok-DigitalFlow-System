@@ -6,6 +6,7 @@ const {
   getMyRequestsFromModel,
   checkExistingTranscriptRequest,
   getSubmittedRequestsFromModel ,
+  getApprovedRequestsFromModel,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -241,6 +242,17 @@ const getSubmittedRequests = async (req, res) => {
     return res.status(500).json({ message: "Server error while fetching submitted requests" });
   }
 };
+const getApprovedRequests = async (req, res) => {
+  try {
+    const { formType } = req.query; // optional filter
+    const data = await getApprovedRequestsFromModel(formType);
+    res.status(200).json(data);
+  } catch (err) {
+    console.error("❌ getApprovedRequests error:", err);
+    res.status(500).json({ message: "Server error while fetching approved requests" });
+  }
+};
+
 
 module.exports = {
   submitProformaRequest,
@@ -251,4 +263,5 @@ module.exports = {
   checkDuplicateTranscript,
   submitG1Request,
   getSubmittedRequests,
+  getApprovedRequests,
 };

@@ -13,6 +13,7 @@ import {
 import CSPayments from "./PaymentsRecord/CSPayments"; 
 import ZoologyPayments from "./PaymentsRecord/ZoologyPayments";
 import APPayments from "./PaymentsRecord/APPayments"
+import UniRequests from "./UniRequests";
 
 const UniAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -68,19 +69,8 @@ const UniAdminDashboard = () => {
             {renderHomeCards()}
           </div>
         );
-
       case "Requests":
-        return (
-          <div className="bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
-            <h2 className="text-2xl font-semibold text-green-700 mb-4">
-              All Requests
-            </h2>
-            <p className="text-gray-600">
-              📌 List of student requests will appear here.
-            </p>
-          </div>
-        );
-
+        return <UniRequests />;
       case "Computer Science":
         return <CSPayments />;
       case "Zoology":
@@ -91,7 +81,6 @@ const UniAdminDashboard = () => {
         return null;
     }
   };
-
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-800 font-sans">
       {/* Sidebar */}

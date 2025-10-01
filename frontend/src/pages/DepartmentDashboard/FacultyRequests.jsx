@@ -54,20 +54,17 @@ const Requests = () => {
             console.error("Error updating request:", err);
         }
     };
-
     if (loading)
         return (
             <p className="text-center text-gray-600 py-10 text-lg animate-pulse">
                 Loading requests...
             </p>
         );
-
     return (
         <div className="p-6">
             <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">
                 📋 Submitted Requests
             </h2>
-
             {requests.length === 0 ? (
                 <p className="text-gray-600 text-center py-6 text-lg">
                     No requests found.
@@ -99,8 +96,8 @@ const Requests = () => {
                                     <td className="px-6 py-3">{req.seat_no}</td>
                                     <td className="px-6 py-3">{req.program}</td>
                                     <td className="px-6 py-3">{req.department_name}</td>
-                                    <td className="px-6 py-3">{req.sem_num || "-"}</td>         {/* ✅ Semester */}
-                                    <td className="px-6 py-3">{req.course_code || "-"}</td>    {/* ✅ Course Code */}
+                                    <td className="px-6 py-3">{req.sem_num || "-"}</td>       
+                                    <td className="px-6 py-3">{req.course_code || "-"}</td>  
                                     <td className="px-6 py-3">{req.course_name || "-"}</td>
                                     <td
                                         className={`px-6 py-3 font-semibold ${req.request_status === "Approved"

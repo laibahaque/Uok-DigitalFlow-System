@@ -198,6 +198,45 @@ const getSubmittedRequestsFromModel = async () => {
   }
 };
 
+const getApprovedRequestsFromModel = async (formType = null) => {
+  try {
+    let query = `
+      SELECT 
+          r.id AS request_id,
+          r.form_type,
+          r.sem_num,
+          r.exam_type,
+          c.course_code AS course_code,
+          c.course_name AS course_name,
+          r.status AS request_status,
+          r.created_at,
+          s.id AS student_id,
+          s.seat_no,
+          s.program,
+          d.depart_name AS department_name
+      FROM requests r
+      JOIN students s ON r.student_id = s.id
+      JOIN departments_sci d ON s.depart_id = d.id
+      LEFT JOIN courses c ON r.course_id = c.id
+      WHERE r.status = 'Approved'
+        AND r.form_type != 'G1 Form'
+    `;
+
+    const params = [];
+    if (formType) {
+      query += " AND r.form_type = ?";
+      params.push(formType);
+    }
+
+    query += " ORDER BY r.created_at DESC";
+
+    const [rows] = await db.execute(query, params);
+    return rows;
+  } catch (err) {
+    console.error("❌ DB Error in getApprovedRequestsFromModel:", err);
+    throw err;
+  }
+};
 
 
 
@@ -209,4 +248,5 @@ module.exports = {
   getMyRequestsFromModel,
   checkExistingTranscriptRequest,
   getSubmittedRequestsFromModel,
+  getApprovedRequestsFromModel,
 };

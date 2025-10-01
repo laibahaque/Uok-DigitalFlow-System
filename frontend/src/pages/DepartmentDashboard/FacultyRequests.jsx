@@ -1,7 +1,7 @@
 // frontend/src/pages/FacultyAdmin/Requests.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify"; 
+import { toast } from "react-toastify";
 const Requests = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -110,27 +110,39 @@ const Requests = () => {
                                         {req.request_status}
                                     </td>
                                     <td className="px-6 py-3 flex gap-2">
-                                        <button
-                                            onClick={() => handleStatusChange(req.request_id, "Approved")}
-                                            disabled={req.request_status !== "Submitted"}
-                                            className={`px-3 py-1 rounded-lg text-sm ${req.request_status === "Approved"
-                                                ? "bg-green-300 cursor-not-allowed"
-                                                : "bg-green-500 hover:bg-green-600 text-white"
-                                                }`}
-                                        >
-                                            {req.request_status === "Approved" ? "Approved" : "Accept"}
-                                        </button>
+                                        <td className="px-6 py-3 flex gap-2">
+                                            {req.request_status === "Submitted" ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleStatusChange(req.request_id, "Approved")}
+                                                        className="px-3 py-1 rounded-lg text-sm bg-green-500 hover:bg-green-600 text-white"
+                                                    >
+                                                        Accept
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleStatusChange(req.request_id, "Rejected")}
+                                                        className="px-3 py-1 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            ) : req.request_status === "Accepted" ? (
+                                                <button
+                                                    disabled
+                                                    className="px-3 py-1 rounded-lg text-sm bg-green-300 cursor-not-allowed text-white"
+                                                >
+                                                    Accepted
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    disabled
+                                                    className="px-3 py-1 rounded-lg text-sm bg-red-300 cursor-not-allowed text-white"
+                                                >
+                                                    Rejected
+                                                </button>
+                                            )}
+                                        </td>
 
-                                        <button
-                                            onClick={() => handleStatusChange(req.request_id, "Rejected")}
-                                            disabled={req.request_status !== "Submitted"}
-                                            className={`px-3 py-1 rounded-lg text-sm ${req.request_status === "Rejected"
-                                                ? "bg-red-300 cursor-not-allowed"
-                                                : "bg-red-500 hover:bg-red-600 text-white"
-                                                }`}
-                                        >
-                                            {req.request_status === "Rejected" ? "Rejected" : "Reject"}
-                                        </button>
                                     </td>
                                 </tr>
                             ))}

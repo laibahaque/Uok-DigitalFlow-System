@@ -5,10 +5,10 @@ const {
   checkExistingRegularRequest,
   getMyRequestsFromModel,
   checkExistingTranscriptRequest,
-  getSubmittedRequestsFromModel ,
+  getSubmittedRequestsFromModel,
   getApprovedRequestsFromModel,
   updateRequestStatusInModel,
-   getRequestById,
+  getRequestById,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -280,10 +280,14 @@ const updateRequestStatus = async (req, res) => {
     }
 
     // 4️⃣ Notify student
-    const msg = `Your ${requestDetails.form_type} request for Semester ${requestDetails.sem_num || ""
-      } has been ${status}.`;
-    await createNotification(requestDetails.student_id, msg);
+    const title = "Request Status Update";
+    const msg = `Your ${requestDetails.form_type} request for Semester ${requestDetails.sem_num || ""} has been ${status}.`;
 
+     await createNotification(
+      req.user.id,  // ✅ logged in user id (auth se)
+      title,
+      msg
+    );
     return res.status(200).json({ message: `✅ Request ${status} successfully!` });
   } catch (err) {
     console.error("❌ updateRequestStatus error:", err);

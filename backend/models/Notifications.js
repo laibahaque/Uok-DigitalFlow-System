@@ -1,11 +1,12 @@
 const db = require("../config/db");
 
-const createNotification = async (toUserOrRole, message) => {
+const createNotification = async (toUserId, title, message) => {
   await db.execute(
-    `INSERT INTO notifications (user_id, title, message)
-     VALUES (?, ?, ?)`,
-    [toUserOrRole, message, message]  // 👈 title & message dono string hain
+    `INSERT INTO notifications (user_id, title, message, created_at, is_read)
+     VALUES (?, ?, ?, NOW(), 0)`,
+    [toUserId, title, message]
   );
 };
+
 
 module.exports = { createNotification };

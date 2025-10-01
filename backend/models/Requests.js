@@ -120,51 +120,6 @@ const checkExistingTranscriptRequest = async (loggedInUserId) => {
 
   return rows.length > 0;
 };
-const submitG1Request = async (req, res) => {
-  try {
-    const studentId = req.user.id; // ✅ AuthMiddleware
-    const { form_type, sem_num, exam_type, selectedCourses } = req.body;
-
-    console.log("📥 Incoming G1 Request:", req.body);
-
-    // 🔎 Validation
-    if (!form_type || !sem_num || !exam_type || !selectedCourses?.length) {
-      return res.status(400).json({
-        message: "⚠️ Missing required fields: form_type, sem_num, exam_type, or selectedCourses",
-      });
-    }
-
-    // 1️⃣ Create Request
-    const requestId = await createFormRequest(
-      studentId,
-      form_type,   // e.g. "G1"
-      sem_num,
-      exam_type
-    );
-
-    // 2️⃣ Save selected courses → requests table (column_id / junction table)
-    await saveG1Courses(requestId, selectedCourses);
-
-    // 3️⃣ Create Log
-    await createRequestLog(requestId, "Submitted", studentId);
-
-    // 4️⃣ Notification
-    await createNotification(
-      studentId,
-      "G1 Request Submitted ✅",
-      `Your ${form_type} request for Semester ${sem_num} (${exam_type}) with ${selectedCourses.length} courses has been submitted successfully.`
-    );
-
-    return res.status(201).json({
-      message: "✅ G1 request submitted successfully!",
-      requestId,
-    });
-
-  } catch (err) {
-    console.error("❌ submitG1Request error:", err);
-    return res.status(500).json({ message: "❌ Server error while submitting G1" });
-  }
-};
 // 📌 Fetch all Submitted Requests with student + department info
 const getSubmittedRequestsFromModel = async () => {
   try {

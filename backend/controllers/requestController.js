@@ -7,6 +7,8 @@ const {
   checkExistingTranscriptRequest,
   getSubmittedRequestsFromModel ,
   getApprovedRequestsFromModel,
+  updateRequestStatusInModel,
+   getRequestById,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -252,7 +254,42 @@ const getApprovedRequests = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching approved requests" });
   }
 };
+const updateRequestStatus = async (req, res) => {
+  try {
+    const { id } = req.params;           // request_id
+    const { status } = req.body;         // "Approved" or "Rejected"
+    const adminId = req.user.id;         // Faculty Admin
 
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ message: "❌ Invalid status" });
+    }
+
+    // 1️⃣ Update main requests table
+    const result = await updateRequestStatusInModel(id, status);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "❌ Request not found" });
+    }
+
+    // 2️⃣ Create log entry
+    await createRequestLog(id, status, adminId);
+
+    // 3️⃣ Fetch details for notification
+    const requestDetails = await getRequestById(id);
+    if (!requestDetails) {
+      return res.status(404).json({ message: "❌ Request not found after update" });
+    }
+
+    // 4️⃣ Notify student
+    const msg = `Your ${requestDetails.form_type} request for Semester ${requestDetails.sem_num || ""
+      } has been ${status}.`;
+    await createNotification(requestDetails.student_id, msg);
+
+    return res.status(200).json({ message: `✅ Request ${status} successfully!` });
+  } catch (err) {
+    console.error("❌ updateRequestStatus error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   submitProformaRequest,
@@ -264,4 +301,5 @@ module.exports = {
   submitG1Request,
   getSubmittedRequests,
   getApprovedRequests,
+  updateRequestStatus,
 };

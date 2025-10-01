@@ -237,7 +237,24 @@ const getApprovedRequestsFromModel = async (formType = null) => {
     throw err;
   }
 };
-
+// 📌 Update Request Status (Faculty Admin Accept/Reject)
+const updateRequestStatusInModel = async (requestId, status) => {
+  const [result] = await db.execute(
+    `UPDATE requests SET status = ?, updated_at = NOW() WHERE id = ?`,
+    [status, requestId]
+  );
+  return result;
+};
+// 📌 Get single request by ID
+const getRequestById = async (requestId) => {
+  const [rows] = await db.execute(
+    `SELECT id, student_id, form_type, sem_num
+       FROM requests
+      WHERE id = ?`,
+    [requestId]
+  );
+  return rows[0] || null;
+};
 
 
 module.exports = {
@@ -249,4 +266,6 @@ module.exports = {
   checkExistingTranscriptRequest,
   getSubmittedRequestsFromModel,
   getApprovedRequestsFromModel,
+  updateRequestStatusInModel,
+  getRequestById
 };

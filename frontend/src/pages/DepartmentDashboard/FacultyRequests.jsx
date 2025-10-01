@@ -1,7 +1,7 @@
 // frontend/src/pages/FacultyAdmin/Requests.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-
+import { toast } from "react-toastify"; 
 const Requests = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -35,25 +35,25 @@ const Requests = () => {
     // ✅ Update status function
     const handleStatusChange = async (id, status) => {
         try {
-            const user = JSON.parse(sessionStorage.getItem("user"));
-            const token = user?.token;
-
             await axios.put(
-                `http://localhost:5000/api/requests/${id}`,
+                `http://localhost:5000/api/requests/${id}/status`,
                 { status },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` } }
             );
 
-            // Local update
-            setRequests((prev) =>
-                prev.map((req) =>
-                    req.request_id === id ? { ...req, request_status: status } : req
-                )
+            setRequests(prev =>
+                [...prev.map(r => r.request_id === id ? { ...r, request_status: status } : r)]
+                    .sort((a, b) => a.request_status === "Submitted" ? -1 : 1)
             );
+
+
+            toast.success(`Request ${status} successfully!`);
         } catch (err) {
-            console.error("Error updating request:", err);
+            toast.error("Failed to update request status!");
+            console.error(err);
         }
     };
+
     if (loading)
         return (
             <p className="text-center text-gray-600 py-10 text-lg animate-pulse">
@@ -96,8 +96,8 @@ const Requests = () => {
                                     <td className="px-6 py-3">{req.seat_no}</td>
                                     <td className="px-6 py-3">{req.program}</td>
                                     <td className="px-6 py-3">{req.department_name}</td>
-                                    <td className="px-6 py-3">{req.sem_num || "-"}</td>       
-                                    <td className="px-6 py-3">{req.course_code || "-"}</td>  
+                                    <td className="px-6 py-3">{req.sem_num || "-"}</td>
+                                    <td className="px-6 py-3">{req.course_code || "-"}</td>
                                     <td className="px-6 py-3">{req.course_name || "-"}</td>
                                     <td
                                         className={`px-6 py-3 font-semibold ${req.request_status === "Approved"
@@ -111,20 +111,25 @@ const Requests = () => {
                                     </td>
                                     <td className="px-6 py-3 flex gap-2">
                                         <button
-                                            onClick={() =>
-                                                handleStatusChange(req.request_id, "Approved")
-                                            }
-                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm"
+                                            onClick={() => handleStatusChange(req.request_id, "Approved")}
+                                            disabled={req.request_status !== "Submitted"}
+                                            className={`px-3 py-1 rounded-lg text-sm ${req.request_status === "Approved"
+                                                ? "bg-green-300 cursor-not-allowed"
+                                                : "bg-green-500 hover:bg-green-600 text-white"
+                                                }`}
                                         >
-                                            Accept
+                                            {req.request_status === "Approved" ? "Approved" : "Accept"}
                                         </button>
+
                                         <button
-                                            onClick={() =>
-                                                handleStatusChange(req.request_id, "Rejected")
-                                            }
-                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
+                                            onClick={() => handleStatusChange(req.request_id, "Rejected")}
+                                            disabled={req.request_status !== "Submitted"}
+                                            className={`px-3 py-1 rounded-lg text-sm ${req.request_status === "Rejected"
+                                                ? "bg-red-300 cursor-not-allowed"
+                                                : "bg-red-500 hover:bg-red-600 text-white"
+                                                }`}
                                         >
-                                            Reject
+                                            {req.request_status === "Rejected" ? "Rejected" : "Reject"}
                                         </button>
                                     </td>
                                 </tr>

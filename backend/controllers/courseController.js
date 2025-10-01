@@ -1,9 +1,9 @@
-const { getCoursesByStudentAndSemester } = require("../models/Courses");
+const { getCoursesByUserAndSemester } = require("../models/Courses");
 
 const fetchCourses = async (req, res) => {
   try {
-    const { studentId, semester } = req.params;
-    const courses = await getCoursesByStudentAndSemester(studentId, semester);
+    const { userId, semester } = req.params;
+    const courses = await getCoursesByUserAndSemester(userId, semester);
     res.json(courses);
   } catch (error) {
     console.error("❌ Error fetching courses:", error);

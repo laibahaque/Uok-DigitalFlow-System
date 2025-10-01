@@ -175,36 +175,62 @@ const checkDuplicateTranscript = async (req, res) => {
     return res.status(500).json({ message: "Server error while checking duplicate transcript" });
   }
 };
+
 const submitG1Request = async (req, res) => {
   try {
+    const studentId = req.user.id;
     const { form_type, sem_num, courses } = req.body;
-    const loggedInUserId = req.user.id;
+    const exam_type = "Regular"; // ya frontend se bhejna ho to wo
 
-    console.log("🔥 submitG1Request called by user:", loggedInUserId);
+    // Courses string ko parse karo
+    let parsedCourses;
+    try {
+      parsedCourses = JSON.parse(courses);
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid courses format" });
+    }
 
-    // get student_id from DB
-    const studentResult = await Requests.getStudentIdByUserId(loggedInUserId);
-    if (!studentResult) return res.status(404).json({ message: "Student not found" });
+    if (!form_type || !sem_num || parsedCourses.length === 0) {
+      return res.status(400).json({
+        message: "⚠️ Missing required fields: form_type, sem_num, courses",
+      });
+    }
 
-    const student_id = studentResult.id;
+    let createdRequests = [];
 
-    // save courses JSON string
-    const coursesJSON = JSON.stringify(courses);
+    for (const c of parsedCourses) {
+      if (!c.id) continue; // skip agar id nahi hai
 
-    const requestId = await Requests.createFormRequest({
-      student_id,
-      form_type,
-      sem_num,
-      courses: coursesJSON,   // 👈 pass courses
-      exam_type: null         // not required for G-1
+      const requestId = await createFormRequest(
+        studentId,
+        form_type,    // "G1"
+        sem_num,      // selected semester
+        exam_type,
+        c.id          // ✅ actual course_id
+      );
+
+      await createRequestLog(requestId, "Submitted", studentId);
+
+      await createNotification(
+        studentId,
+        "G1 Request Submitted ✅",
+        `Your ${form_type} request for Semester ${sem_num} with Course ${c.code} - ${c.name} has been submitted successfully.`
+      );
+
+      createdRequests.push(requestId);
+    }
+
+    return res.status(201).json({
+      message: `✅ G1 request submitted for ${createdRequests.length} course(s)!`,
+      requestIds: createdRequests,
     });
 
-    res.status(201).json({ message: "G-1 Form submitted successfully", requestId });
   } catch (err) {
     console.error("❌ submitG1Request error:", err);
-    res.status(500).json({ message: "Server error while submitting G-1 form" });
+    return res.status(500).json({ message: "❌ Server error while submitting G1" });
   }
 };
+
 
 module.exports = {
   submitProformaRequest,

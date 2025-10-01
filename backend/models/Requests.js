@@ -10,7 +10,14 @@ const getStudentIdByUserId = async (userId) => {
 };
 
 // 📌 2. Create Form Request (dynamic for each form type)
-const createFormRequest = async (loggedInUserId, formType, semNum = null, examType = null) => {
+// 📌 Create Form Request (dynamic for each form type)
+const createFormRequest = async (
+  loggedInUserId,
+  formType,
+  semNum = null,
+  examType = null,
+  courseId = null   // ✅ NEW
+) => {
   const studentId = await getStudentIdByUserId(loggedInUserId);
   console.log("🔎 LoggedInUserId:", loggedInUserId);
   console.log("🔎 StudentId from DB:", studentId);
@@ -19,22 +26,24 @@ const createFormRequest = async (loggedInUserId, formType, semNum = null, examTy
     throw new Error("❌ Student record not found for this user.");
   }
 
-  // 🔥 Dynamic INSERT
+  // 🔥 Dynamic INSERT with course_id column
   const [result] = await db.execute(
     `INSERT INTO requests 
-       (student_id, form_type, sem_num, exam_type, status, updated_at, created_at)
-     VALUES (?, ?, ?, ?, 'Submitted', NOW(), NOW())`,
+       (student_id, form_type, sem_num, exam_type, course_id, status, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, 'Submitted', NOW(), NOW())`,
     [
       studentId,
       formType,
-      semNum || null,      // agar undefined/empty hai to null bhejna
-      examType || null
+      semNum || null,
+      examType || null,
+      courseId || null   // ✅ yahan save hoga
     ]
   );
 
   console.log("✅ Inserted Request ID:", result.insertId);
   return result.insertId;
 };
+
 
 
 // 📌 3. Create Request Log (keep updated_by = user/admin id)
@@ -112,6 +121,52 @@ const checkExistingTranscriptRequest = async (loggedInUserId) => {
 
   return rows.length > 0;
 };
+const submitG1Request = async (req, res) => {
+  try {
+    const studentId = req.user.id; // ✅ AuthMiddleware
+    const { form_type, sem_num, exam_type, selectedCourses } = req.body;
+
+    console.log("📥 Incoming G1 Request:", req.body);
+
+    // 🔎 Validation
+    if (!form_type || !sem_num || !exam_type || !selectedCourses?.length) {
+      return res.status(400).json({
+        message: "⚠️ Missing required fields: form_type, sem_num, exam_type, or selectedCourses",
+      });
+    }
+
+    // 1️⃣ Create Request
+    const requestId = await createFormRequest(
+      studentId,
+      form_type,   // e.g. "G1"
+      sem_num,
+      exam_type
+    );
+
+    // 2️⃣ Save selected courses → requests table (column_id / junction table)
+    await saveG1Courses(requestId, selectedCourses);
+
+    // 3️⃣ Create Log
+    await createRequestLog(requestId, "Submitted", studentId);
+
+    // 4️⃣ Notification
+    await createNotification(
+      studentId,
+      "G1 Request Submitted ✅",
+      `Your ${form_type} request for Semester ${sem_num} (${exam_type}) with ${selectedCourses.length} courses has been submitted successfully.`
+    );
+
+    return res.status(201).json({
+      message: "✅ G1 request submitted successfully!",
+      requestId,
+    });
+
+  } catch (err) {
+    console.error("❌ submitG1Request error:", err);
+    return res.status(500).json({ message: "❌ Server error while submitting G1" });
+  }
+};
+
 
 module.exports = {
   createFormRequest,

@@ -76,7 +76,7 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
     if (form.courses.length < maxCourses) {
       setForm((prev) => ({
         ...prev,
-        courses: [...prev.courses, { code: "", name: "" }],
+        courses: [...prev.courses, { id: "", code: "", name: "" }],
       }));
     } else {
       alert("⚠️ Max 3 courses allowed.");
@@ -139,18 +139,22 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("paidSlip", paidSlip);
-    formData.append("form_type", selectedForm);
-    formData.append("sem_num", form.semesters.join(","));
-    formData.append("courses", JSON.stringify(form.courses));
 
     try {
-      const res = await fetch("http://localhost:5000/api/requests/g1form", {
+      const res = await fetch("http://localhost:5000/api/requests/g1", {
         method: "POST",
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          form_type: selectedForm,
+          sem_num: form.semesters[0], // ✅ ek semester select hua hoga to uska number bhejo
+          courses: JSON.stringify(form.courses), // ✅ pura array bhejna hai (id, code, name)
+        }),
+
       });
+
 
       const data = await res.json();
       if (res.ok) {
@@ -265,6 +269,7 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
                   if (selected) {
                     handleCourseChange(idx, "code", selected.course_code);
                     handleCourseChange(idx, "name", selected.course_name);
+                    handleCourseChange(idx, "id", selected.id);  // ✅ course_id add
                   }
                 }}
                 className={inputClass}
@@ -276,6 +281,7 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
                   </option>
                 ))}
               </select>
+
 
               <input
                 type="text"
@@ -322,11 +328,10 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
           <button
             type="submit"
             disabled={!submitEnabled}
-            className={`px-6 py-2 rounded shadow-md ${
-              submitEnabled
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-400 text-gray-200 cursor-not-allowed"
-            }`}
+            className={`px-6 py-2 rounded shadow-md ${submitEnabled
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-gray-400 text-gray-200 cursor-not-allowed"
+              }`}
           >
             Submit Form
           </button>
@@ -335,11 +340,10 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
             type="button"
             onClick={generateVoucher}
             disabled={voucherGenerated}
-            className={`px-6 py-2 rounded shadow-md ${
-              voucherGenerated
-                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                : "bg-green-600 text-white hover:bg-green-700"
-            }`}
+            className={`px-6 py-2 rounded shadow-md ${voucherGenerated
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700"
+              }`}
           >
             Generate Voucher
           </button>

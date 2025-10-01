@@ -16,9 +16,10 @@ router.get("/my", verifyToken, authorizeRoles("student"), getMyRequests);
 // 📌 Submit new Proforma request
 router.post("/proforma", verifyToken, authorizeRoles("student"), submitProformaRequest);
 
+router.post("/g1", verifyToken, authorizeRoles("student"), submitG1Request);
+
 // 📌 Get logs for a request
 router.get("/:requestId/logs", verifyToken, getRequestLogs);
-router.post("/g1form", verifyToken, submitG1Request);
 
 // 📌 Check duplicate Regular request
 router.post("/check-regular", verifyToken, checkDuplicateRegular);

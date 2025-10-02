@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { ClipboardCheck } from "lucide-react";
 const Requests = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -74,8 +75,9 @@ const Requests = () => {
         );
     return (
         <div className="p-6">
-            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">
-                📋 Submitted Requests
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3 flex items-center gap-3">
+                <ClipboardCheck className="w-7 h-7 text-green-600" /> {/* ← lucide icon */}
+                All Requests
             </h2>
             {requests.length === 0 ? (
                 <p className="text-gray-600 text-center py-6 text-lg">

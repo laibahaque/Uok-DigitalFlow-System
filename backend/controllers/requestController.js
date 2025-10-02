@@ -319,7 +319,7 @@ const updateRequestByUniAdmin = async (req, res) => {
     // ✅ Agar Uni Admin approve kare to status InProgress ho jaye
     let newStatus = status;
     if (status === "Approved") {
-      newStatus = "InProgress";
+      newStatus = "In Progress";
     }
 
     // ✅ Main table me update karo

@@ -1,7 +1,8 @@
 // frontend/src/pages/UniAdmin/UniRequests.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-
+import { toast } from "react-toastify";
+import { ClipboardCheck } from "lucide-react";
 const UniRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,14 @@ const UniRequests = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setRequests(data);
+      // 🔥 Sort so that pending (Approved) stay on top
+      const sorted = data.sort((a, b) => {
+        if (a.request_status === "Approved" && b.request_status !== "Approved") return -1;
+        if (a.request_status !== "Approved" && b.request_status === "Approved") return 1;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+
+      setRequests(sorted);
     } catch (err) {
       console.error("Error fetching approved requests:", err);
     } finally {
@@ -37,14 +45,30 @@ const UniRequests = () => {
 
       await axios.put(
         `http://localhost:5000/api/requests/${requestId}/unistatus`,
-        { status }, // Accept/Reject bhejna hai
+        { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // UI update: set In Progress or Rejected
+      setRequests(prev =>
+        [...prev.map(r =>
+          r.request_id === requestId
+            ? { ...r, request_status: status === "Approved" ? "In Progress" : "Rejected" }
+            : r
+        )].sort((a, b) => {
+          if (a.request_status === "Approved" && b.request_status !== "Approved") return -1;
+          if (a.request_status !== "Approved" && b.request_status === "Approved") return 1;
+          return new Date(b.created_at) - new Date(a.created_at);
+        })
+      );
 
-      // UI refresh
-      fetchRequests();
+      toast.success(
+        status === "Approved"
+          ? "Request moved to In Progress!"
+          : "Request Rejected!"
+      );
     } catch (err) {
+      toast.error("Failed to update request status!");
       console.error(`Error updating request ${status}:`, err);
     }
   };
@@ -55,10 +79,12 @@ const UniRequests = () => {
         Loading approved requests...
       </p>
     );
+
   return (
     <div className="p-6">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">
-        📋 Approved Requests
+      <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3 flex items-center gap-3">
+        <ClipboardCheck className="w-7 h-7 text-green-600" /> {/* ← lucide icon */}
+         All Requests
       </h2>
       {requests.length === 0 ? (
         <p className="text-gray-600 text-center py-6 text-lg">
@@ -91,32 +117,50 @@ const UniRequests = () => {
                   <td className="px-6 py-3">{req.department_name}</td>
                   <td className="px-6 py-3">{req.sem_num || "-"}</td>
                   <td
-                    className={`px-6 py-3 font-semibold ${req.request_status === "Approved"
-                        ? "text-green-600"
+                    className={`px-6 py-3 font-semibold ${req.request_status === "In Progress"
+                        ? "text-blue-600"
                         : req.request_status === "Rejected"
                           ? "text-red-600"
-                          : "text-yellow-600"
+                          : "text-green-600"
                       }`}
                   >
                     {req.request_status}
                   </td>
                   <td className="px-6 py-3 flex gap-2">
-                    <button
-                      onClick={() =>
-                        handleStatusChange(req.request_id, "Approved")
-                      }
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleStatusChange(req.request_id, "Rejected")
-                      }
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
-                    >
-                      Reject
-                    </button>
+                    {req.request_status === "Approved" ? (
+                      <>
+                        <button
+                          onClick={() =>
+                            handleStatusChange(req.request_id, "Approved")
+                          }
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleStatusChange(req.request_id, "Rejected")
+                          }
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : req.request_status === "In Progress" ? (
+                      <button
+                        disabled
+                        className="bg-blue-300 text-white px-3 py-1 rounded-lg cursor-not-allowed"
+                      >
+                        Accepted
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="bg-red-300 text-white px-3 py-1 rounded-lg cursor-not-allowed"
+                      >
+                        Rejected
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

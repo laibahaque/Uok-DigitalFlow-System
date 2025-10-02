@@ -172,7 +172,7 @@ const getApprovedRequestsFromModel = async (formType = null) => {
       JOIN students s ON r.student_id = s.id
       JOIN departments_sci d ON s.depart_id = d.id
       LEFT JOIN courses c ON r.course_id = c.id
-      WHERE r.status = 'Approved'
+      WHERE r.status IN ('Approved','In Progress')
         AND r.form_type != 'G1 Form'
     `;
 

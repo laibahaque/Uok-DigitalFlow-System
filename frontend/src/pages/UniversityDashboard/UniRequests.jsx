@@ -36,10 +36,11 @@ const UniRequests = () => {
       const token = user?.token;
 
       await axios.put(
-        `http://localhost:5000/api/requests/${requestId}`,
-        { status }, // backend ko body me status bhejenge
+        `http://localhost:5000/api/requests/${requestId}/unistatus`,
+        { status }, // Accept/Reject bhejna hai
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
 
       // UI refresh
       fetchRequests();
@@ -74,16 +75,15 @@ const UniRequests = () => {
                 <th className="px-6 py-3 text-left">Department</th>
                 <th className="px-6 py-3 text-left">Semester</th>
                 <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Actions</th> 
+                <th className="px-6 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {requests.map((req, i) => (
                 <tr
                   key={req.request_id}
-                  className={`transition duration-200 ${
-                    i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-green-50`}
+                  className={`transition duration-200 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } hover:bg-green-50`}
                 >
                   <td className="px-6 py-3">{req.form_type}</td>
                   <td className="px-6 py-3">{req.seat_no}</td>
@@ -91,13 +91,12 @@ const UniRequests = () => {
                   <td className="px-6 py-3">{req.department_name}</td>
                   <td className="px-6 py-3">{req.sem_num || "-"}</td>
                   <td
-                    className={`px-6 py-3 font-semibold ${
-                      req.request_status === "Approved"
+                    className={`px-6 py-3 font-semibold ${req.request_status === "Approved"
                         ? "text-green-600"
                         : req.request_status === "Rejected"
-                        ? "text-red-600"
-                        : "text-yellow-600"
-                    }`}
+                          ? "text-red-600"
+                          : "text-yellow-600"
+                      }`}
                   >
                     {req.request_status}
                   </td>

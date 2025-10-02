@@ -11,7 +11,8 @@ const {
   submitG1Request,
   getSubmittedRequests ,
   getApprovedRequests,
-  updateRequestStatus,
+  updateRequestByFaculty,
+  updateRequestByUniAdmin,
 } = require("../controllers/requestController");
 
 router.get("/my", verifyToken, authorizeRoles("student"), getMyRequests);
@@ -49,8 +50,14 @@ router.put(
   "/:id/status",
   verifyToken,
   authorizeRoles("faculty-admin"),
-  updateRequestStatus
+  updateRequestByFaculty
 );
 
+router.put(
+  "/:id/unistatus",
+  verifyToken,
+  authorizeRoles("university-admin"),
+  updateRequestByUniAdmin
+);
 
 module.exports = router;

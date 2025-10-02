@@ -9,6 +9,8 @@ const {
   getApprovedRequestsFromModel,
   updateRequestStatusInModel,
   getRequestById,
+  getRequestByIdWithStudent,
+  getUniAdminUser,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -254,46 +256,97 @@ const getApprovedRequests = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching approved requests" });
   }
 };
-const updateRequestStatus = async (req, res) => {
+// requestsController.js
+
+// Faculty Admin update karega
+const updateRequestByFaculty = async (req, res) => {
   try {
-    const { id } = req.params;           // request_id
-    const { status } = req.body;         // "Approved" or "Rejected"
-    const adminId = req.user.id;         // Faculty Admin
+    const { id } = req.params; // request_id
+    const { status } = req.body; // Approved / Rejected
+    const adminId = req.user.id; // faculty admin ka id
 
     if (!["Approved", "Rejected"].includes(status)) {
       return res.status(400).json({ message: "❌ Invalid status" });
     }
 
-    // 1️⃣ Update main requests table
+    // ✅ Main table update
     const result = await updateRequestStatusInModel(id, status);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "❌ Request not found" });
     }
 
-    // 2️⃣ Create log entry
+    // ✅ Log save
     await createRequestLog(id, status, adminId);
 
-    // 3️⃣ Fetch details for notification
-    const requestDetails = await getRequestById(id);
+    // ✅ Request details
+    const requestDetails = await getRequestByIdWithStudent(id);
     if (!requestDetails) {
       return res.status(404).json({ message: "❌ Request not found after update" });
     }
 
-    // 4️⃣ Notify student
-    const title = "Request Status Update";
-    const msg = `Your ${requestDetails.form_type} request for Semester ${requestDetails.sem_num || ""} has been ${status}.`;
+    // 1️⃣ Student ko notification
+    const studentMsg = `Your ${requestDetails.form_type} request (Semester ${requestDetails.sem_num || ""}) has been ${status} by Faculty.`;
+    await createNotification(requestDetails.student_user_id, "Request Status Update", studentMsg);
 
-     await createNotification(
-      req.user.id,  // ✅ logged in user id (auth se)
-      title,
-      msg
-    );
-    return res.status(200).json({ message: `✅ Request ${status} successfully!` });
+    // 2️⃣ Uni Admin ko notification (except g1)
+    if (requestDetails.form_type.toLowerCase() !== "g1") {
+      const uniMsg = `A ${requestDetails.form_type} request (Semester ${requestDetails.sem_num || ""}) was ${status} by Faculty.`;
+      // uni admin user_id fetch karein
+      const uniAdmin = await getUniAdminUser();
+      if (uniAdmin) {
+        await createNotification(uniAdmin.id, "Faculty Update", uniMsg);
+      }
+    }
+
+    return res.json({ message: `✅ Request ${status} successfully by Faculty` });
   } catch (err) {
-    console.error("❌ updateRequestStatus error:", err);
+    console.error("❌ updateRequestByFaculty error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Uni Admin update karega
+const updateRequestByUniAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const adminId = req.user.id;
+
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ message: "❌ Invalid status" });
+    }
+
+    // ✅ Agar Uni Admin approve kare to status InProgress ho jaye
+    let newStatus = status;
+    if (status === "Approved") {
+      newStatus = "InProgress";
+    }
+
+    // ✅ Main table me update karo
+    const result = await updateRequestStatusInModel(id, newStatus);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "❌ Request not found" });
+    }
+
+    // ✅ Logs me original action save karo (Approved/Rejected)
+    await createRequestLog(id, status, adminId);
+
+    // ✅ Student ko notify karo
+    const requestDetails = await getRequestByIdWithStudent(id);
+    if (!requestDetails) {
+      return res.status(404).json({ message: "❌ Request not found after update" });
+    }
+
+    const studentMsg = `Your ${requestDetails.form_type} request (Semester ${requestDetails.sem_num || ""}) has been ${status} by University.`;
+    await createNotification(requestDetails.student_user_id, "Request Status Update", studentMsg);
+
+    return res.json({ message: `✅ Request ${status} successfully by Uni Admin` });
+  } catch (err) {
+    console.error("❌ updateRequestByUniAdmin error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 module.exports = {
   submitProformaRequest,
@@ -305,5 +358,6 @@ module.exports = {
   submitG1Request,
   getSubmittedRequests,
   getApprovedRequests,
-  updateRequestStatus,
+  updateRequestByFaculty,
+  updateRequestByUniAdmin,
 };

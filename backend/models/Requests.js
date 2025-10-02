@@ -210,6 +210,25 @@ const getRequestById = async (requestId) => {
   return rows[0] || null;
 };
 
+// Request details with student user_id
+const getRequestByIdWithStudent = async (requestId) => {
+  const [rows] = await db.execute(
+    `SELECT r.id, r.form_type, r.sem_num, r.student_id, s.user_id AS student_user_id
+       FROM requests r
+       JOIN students s ON r.student_id = s.id
+      WHERE r.id = ?`,
+    [requestId]
+  );
+  return rows[0] || null;
+};
+
+// Uni Admin user fetch (role_id = 2)
+const getUniAdminUser = async () => {
+  const [rows] = await db.execute(
+    `SELECT id, email FROM users WHERE role_id = 2 LIMIT 1`
+  );
+  return rows[0] || null;
+};
 
 module.exports = {
   createFormRequest,
@@ -221,5 +240,7 @@ module.exports = {
   getSubmittedRequestsFromModel,
   getApprovedRequestsFromModel,
   updateRequestStatusInModel,
-  getRequestById
+  getRequestById,
+  getRequestByIdWithStudent,
+  getUniAdminUser,
 };

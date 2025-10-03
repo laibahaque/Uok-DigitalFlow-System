@@ -37,14 +37,7 @@ const submitProformaRequest = async (req, res) => {
 
     for (const sem of semesters) {
       // 🔎 Regular exam duplicate restriction
-      if (exam_type === "Regular") {
-        const alreadyExists = await checkExistingRegularRequest(studentId, sem);
-        if (alreadyExists) {
-          return res.status(400).json({
-            message: `❌ You have already applied for Semester ${sem} as Regular. Please select Improved instead.`,
-          });
-        }
-      }
+      
 
       // 1️⃣ Create Request
       const requestId = await createFormRequest(

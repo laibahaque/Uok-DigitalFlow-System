@@ -120,6 +120,21 @@ const checkExistingTranscriptRequest = async (loggedInUserId) => {
 
   return rows.length > 0;
 };
+const checkExistingG1Request = async (loggedInUserId, semNum, courseId) => {
+  const studentId = await getStudentIdByUserId(loggedInUserId);
+  if (!studentId) return false;
+
+  const [rows] = await db.execute(
+    `SELECT id FROM requests
+       WHERE student_id = ? 
+         AND sem_num = ? 
+         AND course_id = ? 
+         AND form_type = 'G1 Form'`,  
+    [studentId, semNum, courseId]
+  );
+
+  return rows.length > 0;
+};
 // 📌 Fetch all Submitted Requests with student + department info
 const getSubmittedRequestsFromModel = async () => {
   try {
@@ -249,4 +264,5 @@ module.exports = {
   getRequestByIdWithStudent,
   getUniAdminUser,
   getFacultyAdminUser,
+  checkExistingG1Request,
 };

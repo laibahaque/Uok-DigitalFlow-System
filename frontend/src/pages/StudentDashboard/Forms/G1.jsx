@@ -107,8 +107,31 @@ export default function G1Form({ userId, studentInfo, selectedForm }) {
   };
 
   // -------------------- Voucher --------------------
-  const generateVoucher = () => {
+  const generateVoucher = async () => {
     if (!validateForm()) return;
+
+    try {
+      const res = await fetch("http://localhost:5000/api/requests/check-duplicate-g1", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          sem_num: form.semesters[0],
+          courses: JSON.stringify(form.courses), // ✅
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.message || "Duplicate request found");
+        return; // 🔴 voucher nahi banega
+      }
+    } catch (err) {
+      setErrorMessage("Server error while checking duplicate");
+      return;
+    }
 
     const totalFee = form.courses.length * courseFee;
     const doc = new jsPDF();

@@ -9,6 +9,7 @@ const {
   submitTranscriptRequest,
   checkDuplicateTranscript,
   submitG1Request,
+  checkDuplicateG1,
   getSubmittedRequests ,
   getApprovedRequests,
   updateRequestByFaculty,
@@ -28,6 +29,8 @@ router.get("/:requestId/logs", verifyToken, getRequestLogs);
 // 📌 Check duplicate Regular request
 router.post("/check-regular", verifyToken, checkDuplicateRegular);
 router.post("/check-transcript", verifyToken, checkDuplicateTranscript);
+router.post("/check-duplicate-g1", verifyToken, checkDuplicateG1);
+
 router.post(
   "/transcript",
   verifyToken,

@@ -5,6 +5,7 @@ const {
   checkExistingRegularRequest,
   getMyRequestsFromModel,
   checkExistingTranscriptRequest,
+  checkExistingG1Request,
   getSubmittedRequestsFromModel,
   getApprovedRequestsFromModel,
   updateRequestStatusInModel,
@@ -224,7 +225,7 @@ const submitG1Request = async (req, res) => {
 
     for (const c of parsedCourses) {
       if (!c.id) continue; // skip agar id nahi hai
-
+      
       const requestId = await createFormRequest(
         studentId,
         form_type,    // "G1"
@@ -261,6 +262,34 @@ const submitG1Request = async (req, res) => {
   } catch (err) {
     console.error("❌ submitG1Request error:", err);
     return res.status(500).json({ message: "❌ Server error while submitting G1" });
+  }
+};
+// 📌 Check Duplicate G1 (voucher se pehle)
+const checkDuplicateG1 = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { sem_num, courses } = req.body;
+
+    let parsedCourses;
+    try {
+      parsedCourses = JSON.parse(courses);
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid courses format" });
+    }
+
+    for (const c of parsedCourses) {
+      const exists = await checkExistingG1Request(studentId, sem_num, c.id);
+      if (exists) {
+        return res.status(400).json({
+          message: `❌ You already applied for this course (${c.code}) in Semester ${sem_num}.`
+        });
+      }
+    }
+
+    return res.status(200).json({ message: "✅ No conflict, you can proceed." });
+  } catch (err) {
+    console.error("checkDuplicateG1 error:", err);
+    return res.status(500).json({ message: "Server error while checking G1 duplicates" });
   }
 };
 
@@ -316,7 +345,7 @@ const updateRequestByFaculty = async (req, res) => {
     await createNotification(requestDetails.student_user_id, "Request Status Update", studentMsg);
 
     // 2️⃣ Uni Admin ko notification (except g1)
-    if (requestDetails.form_type.toLowerCase() !== "g1") {
+    if (requestDetails.form_type.toLowerCase() !== "G1 Form") {
       const uniMsg = `A ${requestDetails.form_type} request (Semester ${requestDetails.sem_num || ""}) was ${status} by Faculty.`;
       // uni admin user_id fetch karein
       const uniAdmin = await getUniAdminUser();
@@ -383,6 +412,7 @@ module.exports = {
   submitTranscriptRequest,
   checkDuplicateTranscript,
   submitG1Request,
+  checkDuplicateG1,
   getSubmittedRequests,
   getApprovedRequests,
   updateRequestByFaculty,

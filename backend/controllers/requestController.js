@@ -20,61 +20,65 @@ const { createNotification } = require("../models/Notifications");
 // 📌 Submit Proforma Request
 const submitProformaRequest = async (req, res) => {
   try {
-    const studentId = req.user.id; // ✅ AuthMiddleware se aata hai
+    const studentId = req.user.id;
     const { form_type, sem_num, exam_type } = req.body;
-    console.log("📥 req.body in submitProformaRequest:", req.body);
-
     console.log("📥 Incoming Proforma Request:", { form_type, sem_num, exam_type });
 
-    // 🔎 Validation
     if (!form_type || !sem_num || !exam_type) {
       return res.status(400).json({
         message: "⚠️ Missing required fields: form_type, sem_num, or exam_type",
       });
     }
 
-    // 🔎 Regular exam duplicate restriction
-    if (exam_type === "Regular") {
-      const alreadyExists = await checkExistingRegularRequest(studentId, sem_num);
-      if (alreadyExists) {
-        return res.status(400).json({
-          message:
-            "❌ You have already applied for this semester as Regular. Please select Improved instead.",
-        });
+    // 🔎 Convert comma separated semesters into array
+    const semesters = sem_num.split(","); // e.g. "1,2" → ["1","2"]
+
+    let createdRequests = [];
+
+    for (const sem of semesters) {
+      // 🔎 Regular exam duplicate restriction
+      if (exam_type === "Regular") {
+        const alreadyExists = await checkExistingRegularRequest(studentId, sem);
+        if (alreadyExists) {
+          return res.status(400).json({
+            message: `❌ You have already applied for Semester ${sem} as Regular. Please select Improved instead.`,
+          });
+        }
       }
-    }
 
-    // 1️⃣ Create Request
-    const requestId = await createFormRequest(
-      studentId,
-      form_type,     // ✅ Dynamic form type (e.g. "Proforma")
-      sem_num,
-      exam_type
-    );
-
-    // 2️⃣ Create Log entry
-    await createRequestLog(requestId, "Submitted", studentId);
-
-    // 3️⃣ Create Notification
-    await createNotification(
-      studentId,
-      "Proforma Request Submitted ✅",
-      `Your ${form_type} request for Semester ${sem_num} (${exam_type}) has been submitted successfully.`
-    );
-    const facultyAdmin = await getFacultyAdminUser();
-    // console.log("facultyAdmin:", facultyAdmin);
-    if (facultyAdmin) {
-      await createNotification(
-        facultyAdmin.id,
-        "New Proforma Request Submitted",
-        `A student submitted ${form_type} request for Semester ${sem_num} (${exam_type}).`
+      // 1️⃣ Create Request
+      const requestId = await createFormRequest(
+        studentId,
+        form_type,
+        sem,
+        exam_type
       );
+
+      // 2️⃣ Create Log entry
+      await createRequestLog(requestId, "Submitted", studentId);
+
+      // 3️⃣ Create Notification
+      await createNotification(
+        studentId,
+        "Proforma Request Submitted ✅",
+        `Your ${form_type} request for Semester ${sem} (${exam_type}) has been submitted successfully.`
+      );
+
+      const facultyAdmin = await getFacultyAdminUser();
+      if (facultyAdmin) {
+        await createNotification(
+          facultyAdmin.id,
+          "New Proforma Request Submitted",
+          `A student submitted ${form_type} request for Semester ${sem} (${exam_type}).`
+        );
+      }
+
+      createdRequests.push(requestId);
     }
 
-    // ✅ Success response
     return res.status(201).json({
-      message: "✅ Proforma request submitted successfully!",
-      requestId,
+      message: `✅ Proforma request submitted for ${createdRequests.length} semester(s)!`,
+      requestIds: createdRequests,
     });
 
   } catch (err) {

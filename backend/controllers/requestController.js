@@ -11,6 +11,7 @@ const {
   getRequestById,
   getRequestByIdWithStudent,
   getUniAdminUser,
+  getFacultyAdminUser,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -59,7 +60,15 @@ const submitProformaRequest = async (req, res) => {
       "Proforma Request Submitted ✅",
       `Your ${form_type} request for Semester ${sem_num} (${exam_type}) has been submitted successfully.`
     );
-
+    const facultyAdmin = await getFacultyAdminUser();
+    // console.log("facultyAdmin:", facultyAdmin);
+    if (facultyAdmin) {
+      await createNotification(
+        facultyAdmin.id,
+        "New Proforma Request Submitted",
+        `A student submitted ${form_type} request for Semester ${sem_num} (${exam_type}).`
+      );
+    }
 
     // ✅ Success response
     return res.status(201).json({
@@ -152,7 +161,16 @@ const submitTranscriptRequest = async (req, res) => {
       "Transcript Request Submitted ✅",
       "Your transcript request has been submitted successfully."
     );
-
+    // 4️⃣ Faculty Admin Notification
+    const facultyAdmin = await getFacultyAdminUser();
+    // console.log("facultyAdmin:", facultyAdmin);
+    if (facultyAdmin) {
+      await createNotification(
+        facultyAdmin.id,
+        "New Transcript Request Submitted",
+        `A student submitted a transcript request (Delivery: ${delivery_method}).`
+      );
+    }
     res.status(201).json({
       message: "✅ Transcript request submitted!",
       requestId
@@ -222,6 +240,15 @@ const submitG1Request = async (req, res) => {
         "G1 Request Submitted ✅",
         `Your ${form_type} request for Semester ${sem_num} with Course ${c.code} - ${c.name} has been submitted successfully.`
       );
+      const facultyAdmin = await getFacultyAdminUser();
+      // console.log("facultyAdmin:", facultyAdmin);
+      if (facultyAdmin) {
+        await createNotification(
+          facultyAdmin.id,
+          "New G1 Request Submitted",
+          `A student submitted a G1 request for Course ${c.code} - ${c.name} (Semester ${sem_num}).`
+        );
+      }
 
       createdRequests.push(requestId);
     }

@@ -229,7 +229,12 @@ const getUniAdminUser = async () => {
   );
   return rows[0] || null;
 };
-
+const getFacultyAdminUser = async () => {
+  const [rows] = await db.execute(
+    `SELECT id, email FROM users WHERE role_id = 1 LIMIT 1`
+  );
+  return rows[0] || null;
+};
 module.exports = {
   createFormRequest,
   createRequestLog,
@@ -243,4 +248,5 @@ module.exports = {
   getRequestById,
   getRequestByIdWithStudent,
   getUniAdminUser,
+  getFacultyAdminUser,
 };

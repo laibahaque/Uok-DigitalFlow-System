@@ -24,8 +24,8 @@ const UniRequests = () => {
 
       // 🔥 Sort so that pending (Approved) stay on top
       const sorted = data.sort((a, b) => {
-        if (a.request_status === "Approved" && b.request_status !== "Approved") return -1;
-        if (a.request_status !== "Approved" && b.request_status === "Approved") return 1;
+        if (a.request_status === "Faculty Approved" && b.request_status !== "Faculty Approved") return -1;
+        if (a.request_status !== "Faculty Approved" && b.request_status === "Faculty Approved") return 1;
         return new Date(b.created_at) - new Date(a.created_at);
       });
 
@@ -53,17 +53,17 @@ const UniRequests = () => {
       setRequests(prev =>
         [...prev.map(r =>
           r.request_id === requestId
-            ? { ...r, request_status: status === "Approved" ? "In Progress" : "Rejected" }
+            ? { ...r, request_status: status === "University Approved" ? "In Progress" : "Rejected" }
             : r
         )].sort((a, b) => {
-          if (a.request_status === "Approved" && b.request_status !== "Approved") return -1;
-          if (a.request_status !== "Approved" && b.request_status === "Approved") return 1;
+          if (a.request_status === "University Approved" && b.request_status !== "University Approved") return -1;
+          if (a.request_status !== "University Approved" && b.request_status === "University Approved") return 1;
           return new Date(b.created_at) - new Date(a.created_at);
         })
       );
 
       toast.success(
-        status === "Approved"
+        status === "University Approved"
           ? "Request moved to In Progress!"
           : "Request Rejected!"
       );
@@ -127,11 +127,11 @@ const UniRequests = () => {
                     {req.request_status}
                   </td>
                   <td className="px-6 py-3 flex gap-2">
-                    {req.request_status === "Approved" ? (
+                    {req.request_status === "Faculty Approved" ? (
                       <>
                         <button
                           onClick={() =>
-                            handleStatusChange(req.request_id, "Approved")
+                            handleStatusChange(req.request_id, "University Approved")
                           }
                           className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg"
                         >

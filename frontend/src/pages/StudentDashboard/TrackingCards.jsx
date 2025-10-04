@@ -3,7 +3,7 @@ import { CheckCircle, Clock, Send, Calendar } from "lucide-react"; // Lucide ico
 
 const defaultStatuses = [
   "Submitted",
-  "Department Approval",
+  "Faculty Approval",
   "University Approval",
   "In Progress",
   "Completed",
@@ -11,7 +11,7 @@ const defaultStatuses = [
 
 const statusColors = {
   Submitted: "bg-gradient-to-br from-green-100 to-green-200",
-  "Department Approval": "bg-gradient-to-br from-blue-100 to-blue-200",
+  "Faculty Approval": "bg-gradient-to-br from-blue-100 to-blue-200",
   "University Approval": "bg-gradient-to-br from-purple-100 to-purple-200",
   "In Progress": "bg-gradient-to-br from-yellow-100 to-yellow-200",
   Completed: "bg-gradient-to-br from-red-100 to-red-200",
@@ -84,7 +84,7 @@ const TrackingCards = ({ requestId }) => {
   // Helper function for messages
   const getStatusMessage = (status, logs) => {
     const submittedLog = logs.find((l) => l.status === "Submitted");
-    const deptApproved = logs.find((l) => l.status === "Department Approval");
+    const deptApproved = logs.find((l) => l.status === "Faculty Approval");
     const uniApproved = logs.find((l) => l.status === "University Approval");
     const inProgressLog = logs.find((l) => l.status === "In Progress");
     const completedLog = logs.find((l) => l.status === "Completed");
@@ -94,7 +94,7 @@ const TrackingCards = ({ requestId }) => {
       case "Submitted":
         return submittedLog ? "Your request has been submitted." : "";
 
-      case "Department Approval":
+      case "Faculty Approval":
         if (!deptApproved) return "Requested Faculty Admin for approval.";
         return "Faculty admin approved.";
 
@@ -154,7 +154,7 @@ const TrackingCards = ({ requestId }) => {
             case "Submitted":
               statusIcon = <Send className="w-5 h-5 text-gray-700" />;
               break;
-            case "Department Approval":
+            case "Faculty Approval":
             case "University Approval":
             case "Completed":
               statusIcon = <CheckCircle className="w-5 h-5 text-gray-700" />;

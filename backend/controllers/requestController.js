@@ -318,7 +318,7 @@ const updateRequestByFaculty = async (req, res) => {
     const { status } = req.body; // Approved / Rejected
     const adminId = req.user.id; // faculty admin ka id
 
-    if (!["Approved", "Rejected"].includes(status)) {
+    if (!["Faculty Approved", "Rejected"].includes(status)) {
       return res.status(400).json({ message: "❌ Invalid status" });
     }
 
@@ -365,13 +365,13 @@ const updateRequestByUniAdmin = async (req, res) => {
     const { status } = req.body;
     const adminId = req.user.id;
 
-    if (!["Approved", "Rejected"].includes(status)) {
+    if (!["University Approved", "Rejected"].includes(status)) {
       return res.status(400).json({ message: "❌ Invalid status" });
     }
 
     // ✅ Agar Uni Admin approve kare to status InProgress ho jaye
     let newStatus = status;
-    if (status === "Approved") {
+    if (status === "University Approved") {
       newStatus = "In Progress";
     }
 

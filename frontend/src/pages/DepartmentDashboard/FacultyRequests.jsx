@@ -114,7 +114,7 @@ const Requests = () => {
                                     <td className="px-6 py-3">{req.course_code || "-"}</td>
                                     <td className="px-6 py-3">{req.course_name || "-"}</td>
                                     <td
-                                        className={`px-6 py-3 font-semibold ${req.request_status === "Approved"
+                                        className={`px-6 py-3 font-semibold ${req.request_status === "Faculty Approved"
                                             ? "text-green-600"
                                             : req.request_status === "Rejected"
                                                 ? "text-red-600"
@@ -128,19 +128,19 @@ const Requests = () => {
                                             {req.request_status === "Submitted" ? (
                                                 <>
                                                     <button
-                                                        onClick={() => handleStatusChange(req.request_id, "Approved")}
+                                                        onClick={() => handleStatusChange(req.request_id, "Faculty Approved")}
                                                         className="px-3 py-1 rounded-lg text-sm bg-green-500 hover:bg-green-600 text-white"
                                                     >
                                                         Accept
                                                     </button>
                                                     <button
-                                                        onClick={() => handleStatusChange(req.request_id, "Rejected")}
+                                                        onClick={() => handleStatusChange(req.request_id, "Faculty Rejected")}
                                                         className="px-3 py-1 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white"
                                                     >
                                                         Reject
                                                     </button>
                                                 </>
-                                            ) : req.request_status === "Approved" ? (
+                                            ) : req.request_status === "Faculty Approved" ? (
                                                 <button
                                                     disabled
                                                     className="px-3 py-1 rounded-lg text-sm bg-green-300 cursor-not-allowed text-white"

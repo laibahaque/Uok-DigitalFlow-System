@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
 
@@ -11,6 +13,23 @@ import UniAdminDashboard from "./pages/UniversityDashboard/UniAdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Disable browser "back" navigation to cached dashboard
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = function () {
+      window.history.pushState(null, "", window.location.href);
+      navigate("/login", { replace: true });
+    };
+
+    // Force reload if page restored from cache (after logout or close)
+    window.onpageshow = function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
+  }, [navigate]);
   return (
     <>
       {/* ✅ Toast popup container */}

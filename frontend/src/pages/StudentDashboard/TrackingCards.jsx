@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle, Clock, Send, Calendar } from "lucide-react";
 
-const statuses = [
+const baseStatuses = [
   "Submitted",
   "Faculty Approval",
   "University Approval",
@@ -89,15 +89,15 @@ const TrackingCards = ({ requestId }) => {
     );
   }
 
-  // ✅ Dynamic Heading logic
+  // ✅ Dynamic heading
   const getHeading = () => {
     if (!formType) return "";
 
     switch (formType) {
       case "Proforma":
       case "Proforma Form":
-        return `Tracking for: Proforma Form Sem ${semNum || "?"} ${
-          examType ? `(${examType})` : ""
+        return `Tracking for: Proforma Form (Semester ${semNum || "?"}) ${
+          examType ? `– ${examType}` : ""
         }`;
 
       case "Transcript":
@@ -105,9 +105,9 @@ const TrackingCards = ({ requestId }) => {
         return "Tracking for: Transcript Form";
 
       case "G1 Form":
-        return `Tracking for: G1 Form Sem ${semNum || "?"}${
+        return `Tracking for: G1 Form (Semester ${semNum || "?"})${
           courseCode && courseName
-            ? ` Course: ${courseCode}, ${courseName}`
+            ? ` – ${courseCode}: ${courseName}`
             : ""
         }`;
 
@@ -116,7 +116,13 @@ const TrackingCards = ({ requestId }) => {
     }
   };
 
-  // ✅ Status Message Logic
+  // ✅ G1 Form — Skip University Approval
+  const statuses =
+    formType === "G1 Form"
+      ? baseStatuses.filter((s) => s !== "University Approval")
+      : baseStatuses;
+
+  // ✅ Status Message Logic (G1 handled)
   const getStatusMessage = (status) => {
     const submitted = logs.find((l) => l.status === "Submitted");
     const facultyApproved = logs.find((l) => l.status === "Faculty Approved");
@@ -129,12 +135,12 @@ const TrackingCards = ({ requestId }) => {
 
     switch (status) {
       case "Submitted":
-        return submitted ? "Your request has been submitted." : "";
+        return "Your request has been submitted.";
 
       case "Faculty Approval":
         return facultyApproved
-          ? "Faculty admin approved."
-          : "Requested Faculty Admin for approval.";
+          ? "Faculty admin approved your request."
+          : "Waiting for faculty admin approval.";
 
       case "University Approval":
         if (!facultyApproved) return "Waiting for faculty admin approval first.";
@@ -143,6 +149,14 @@ const TrackingCards = ({ requestId }) => {
         return "Requested University Admin for approval.";
 
       case "In Progress": {
+        // ✅ For G1 Form → start In Progress after Faculty Approval only
+        if (formType === "G1 Form") {
+          if (!facultyApproved) return "Waiting for faculty approval.";
+          if (completed) return "Request completed successfully.";
+          return "In progress (5–7 working days).";
+        }
+
+        // ✅ For all others → normal university approval flow
         if (!universityApproved)
           return "Waiting for approvals to start progress.";
         if (completed) return "Request completed successfully.";
@@ -224,6 +238,7 @@ const TrackingCards = ({ requestId }) => {
               key={status}
               className={`relative p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 ${colorClass} flex flex-col justify-between h-56`}
             >
+              {/* Title */}
               <div className="flex items-center gap-2 mb-3">
                 {statusIcon}
                 <h3 className="text-lg font-semibold text-gray-800">
@@ -231,6 +246,7 @@ const TrackingCards = ({ requestId }) => {
                 </h3>
               </div>
 
+              {/* Message */}
               <div className="flex-grow flex items-center justify-center">
                 {message && (
                   <p className="text-sm text-gray-700 text-center leading-relaxed">
@@ -239,6 +255,7 @@ const TrackingCards = ({ requestId }) => {
                 )}
               </div>
 
+              {/* Footer */}
               <div className="mt-4 flex flex-col items-center gap-2">
                 {(completedLog?.created_at || log?.created_at) && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">

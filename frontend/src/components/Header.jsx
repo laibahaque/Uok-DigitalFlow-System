@@ -3,7 +3,7 @@ import { Bell, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/authContext";
 
-const Header = () => {
+const Header = ({ onNotificationClick }) => {
   const { user, logout } = useContext(AuthContext);
   const [userData, setUserData] = useState(null);
   const [openProfile, setOpenProfile] = useState(false);
@@ -52,14 +52,33 @@ const Header = () => {
     fetchUserData();
   }, [user]);
 
-  // ✅ Mark as Read + Redirect
+  // ✅ Mark as Read + Auto-close + Redirect
   const handleReadNotification = async (id) => {
     try {
       await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      navigate("/requests");
+
+      // ✅ Close dropdown immediately
+      setOpenNotifications(false);
+
+      // ✅ Trigger callback if provided (tab switch in dashboard)
+      if (typeof onNotificationClick === "function") {
+        onNotificationClick();
+        return;
+      }
+
+      // ✅ Otherwise fallback navigation
+      if (user.role === "university-admin") {
+        navigate("/university-dashboard");
+      } else if (user.role === "faculty-admin") {
+        navigate("/faculty-dashboard");
+      } else if (user.role === "student") {
+        navigate("/dashboard");
+      } else {
+        navigate("/login");
+      }
     } catch (err) {
       console.error("❌ Error marking notification as read:", err);
     }

@@ -10,7 +10,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 
-import CSPayments from "./PaymentsRecord/CSPayments"; 
+import CSPayments from "./PaymentsRecord/CSPayments";
 import ZoologyPayments from "./PaymentsRecord/ZoologyPayments";
 import APPayments from "./PaymentsRecord/APPayments"
 import UniRequests from "./UniRequests";
@@ -75,7 +75,7 @@ const UniAdminDashboard = () => {
         return <CSPayments />;
       case "Zoology":
         return <ZoologyPayments />;
-        case "Applied Physics":
+      case "Applied Physics":
         return <APPayments />;
       default:
         return null;
@@ -172,7 +172,10 @@ const UniAdminDashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1">
-        <Header adminName={user?.name || "University Admin"} />
+        <Header
+          adminName={user?.name || "University Admin"}
+          onNotificationClick={() => setSelectedPage("Requests")}
+        />
         {renderContent()}
       </main>
     </div>

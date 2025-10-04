@@ -206,7 +206,10 @@ const FacultyAdminDashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1">
-        <Header adminName={user?.name || "Department Admin"} />
+        <Header
+          adminName={user?.name || "Department Admin"}
+          onNotificationClick={() => setSelectedForm("Requests")}
+        />
         {renderContent()}
       </main>
     </div>

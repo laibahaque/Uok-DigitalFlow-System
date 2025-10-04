@@ -13,6 +13,7 @@ const {
   getRequestByIdWithStudent,
   getUniAdminUser,
   getFacultyAdminUser,
+  autoCompleteOldRequests,
 } = require("../models/Requests");
 
 const { createNotification } = require("../models/Notifications");
@@ -399,6 +400,14 @@ const updateRequestByUniAdmin = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+const autoCompleteRequests = async (req, res) => {
+  try {
+    const count = await autoCompleteOldRequests();
+    res.json({ message: `✅ ${count} requests marked as Completed.` });
+  } catch (err) {
+    res.status(500).json({ message: "❌ Failed to auto-complete requests." });
+  }
+};
 
 
 module.exports = {
@@ -414,4 +423,5 @@ module.exports = {
   getApprovedRequests,
   updateRequestByFaculty,
   updateRequestByUniAdmin,
+  autoCompleteRequests,
 };

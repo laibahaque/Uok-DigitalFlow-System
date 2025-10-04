@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle, Clock, Send, Calendar } from "lucide-react"; // Lucide icons
+import { CheckCircle, Clock, Send, Calendar } from "lucide-react";
 
-const defaultStatuses = [
+const statuses = [
   "Submitted",
   "Faculty Approval",
   "University Approval",
   "In Progress",
-  "Completed",
 ];
 
 const statusColors = {
@@ -19,14 +18,20 @@ const statusColors = {
 };
 
 const badgeColors = {
+  Submitted: "bg-blue-600 text-white",
   Approved: "bg-green-600 text-white",
   Rejected: "bg-red-600 text-white",
   Pending: "bg-yellow-400 text-black",
+  Completed: "bg-green-700 text-white",
 };
 
 const TrackingCards = ({ requestId }) => {
   const [logs, setLogs] = useState([]);
   const [formType, setFormType] = useState("");
+  const [semNum, setSemNum] = useState(null);
+  const [examType, setExamType] = useState(null);
+  const [courseCode, setCourseCode] = useState(null);
+  const [courseName, setCourseName] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -53,6 +58,10 @@ const TrackingCards = ({ requestId }) => {
         console.log("API Response:", data);
 
         setFormType(data.form_type || "");
+        setSemNum(data.sem_num || null);
+        setExamType(data.exam_type || null);
+        setCourseCode(data.course_code || null);
+        setCourseName(data.course_name || null);
         setLogs(data.logs || []);
       } catch (err) {
         console.error(err);
@@ -68,7 +77,6 @@ const TrackingCards = ({ requestId }) => {
   if (loading) return <p>Loading tracking info...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
-  // ✅ Show "No Request Found" only if logs is empty
   if (logs.length === 0) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-yellow-800 shadow-md">
@@ -81,39 +89,65 @@ const TrackingCards = ({ requestId }) => {
     );
   }
 
-  // Helper function for messages
-  const getStatusMessage = (status, logs) => {
-    const submittedLog = logs.find((l) => l.status === "Submitted");
-    const deptApproved = logs.find((l) => l.status === "Faculty Approval");
-    const uniApproved = logs.find((l) => l.status === "University Approval");
-    const inProgressLog = logs.find((l) => l.status === "In Progress");
-    const completedLog = logs.find((l) => l.status === "Completed");
-    const rejectedLog = logs.find((l) => l.status === "Rejected");
+  // ✅ Dynamic Heading logic
+  const getHeading = () => {
+    if (!formType) return "";
+
+    switch (formType) {
+      case "Proforma":
+      case "Proforma Form":
+        return `Tracking for: Proforma Form Sem ${semNum || "?"} ${
+          examType ? `(${examType})` : ""
+        }`;
+
+      case "Transcript":
+      case "Transcript Form":
+        return "Tracking for: Transcript Form";
+
+      case "G1 Form":
+        return `Tracking for: G1 Form Sem ${semNum || "?"}${
+          courseCode && courseName
+            ? ` Course: ${courseCode}, ${courseName}`
+            : ""
+        }`;
+
+      default:
+        return `Tracking for: ${formType}`;
+    }
+  };
+
+  // ✅ Status Message Logic
+  const getStatusMessage = (status) => {
+    const submitted = logs.find((l) => l.status === "Submitted");
+    const facultyApproved = logs.find((l) => l.status === "Faculty Approved");
+    const universityApproved = logs.find(
+      (l) => l.status === "University Approved"
+    );
+    const inProgress = logs.find((l) => l.status === "In Progress");
+    const completed = logs.find((l) => l.status === "Completed");
+    const rejected = logs.find((l) => l.status === "Rejected");
 
     switch (status) {
       case "Submitted":
-        return submittedLog ? "Your request has been submitted." : "";
+        return submitted ? "Your request has been submitted." : "";
 
       case "Faculty Approval":
-        if (!deptApproved) return "Requested Faculty Admin for approval.";
-        return "Faculty admin approved.";
+        return facultyApproved
+          ? "Faculty admin approved."
+          : "Requested Faculty Admin for approval.";
 
       case "University Approval":
-        if (!deptApproved) return "Waiting for faculty admin approval first.";
-        if (!uniApproved && !rejectedLog)
-          return "Requested University Admin for approval.";
-        if (uniApproved) return "University approved your request.";
-        if (rejectedLog) return "University rejected your request.";
-        return "";
+        if (!facultyApproved) return "Waiting for faculty admin approval first.";
+        if (universityApproved) return "University approved your request.";
+        if (rejected) return "University rejected your request.";
+        return "Requested University Admin for approval.";
 
-      case "In Progress":
-        if (!uniApproved) return "Waiting for approvals to start progress.";
-        return "In progress (5-7 working days).";
-
-      case "Completed":
-        if (inProgressLog) return "Soon to be completed.";
-        if (completedLog) return "Request completed successfully.";
-        return "";
+      case "In Progress": {
+        if (!universityApproved)
+          return "Waiting for approvals to start progress.";
+        if (completed) return "Request completed successfully.";
+        return "In progress (5–7 working days).";
+      }
 
       default:
         return "";
@@ -121,36 +155,53 @@ const TrackingCards = ({ requestId }) => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50">
+      {/* ✅ Dynamic Heading */}
       {formType && (
         <h2 className="text-xl font-bold mb-6 text-gray-800">
-          Tracking for: {formType}
+          {getHeading()}
         </h2>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {defaultStatuses.map((status) => {
-          const log = logs.find((l) => l.status === status);
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statuses.map((status) => {
+          let backendStatus = status;
+          if (status === "Faculty Approval") backendStatus = "Faculty Approved";
+          if (status === "University Approval")
+            backendStatus = "University Approved";
 
-          // Determine card color
-          let colorClass = statusColors[status] || statusColors.Pending;
+          const log = logs.find((l) => l.status === backendStatus);
+          const completedLog = logs.find((l) => l.status === "Completed");
 
-          // Badge logic
-          const badgeText = log
-            ? log.status === "Rejected"
-              ? "Rejected"
-              : "Approved"
-            : "Pending";
+          let effectiveStatus = status;
+          if (status === "In Progress" && completedLog) {
+            effectiveStatus = "Completed";
+          }
 
-          const badgeClass = log
-            ? log.status === "Rejected"
-              ? badgeColors.Rejected
-              : badgeColors.Approved
-            : badgeColors.Pending;
+          const colorClass =
+            statusColors[effectiveStatus] || statusColors.Pending;
 
-          // Icon for each status
+          let badgeText = "Pending";
+          let badgeClass = badgeColors.Pending;
+
+          if (effectiveStatus === "Submitted" && log) {
+            badgeText = "Submitted";
+            badgeClass = badgeColors.Submitted;
+          } else if (effectiveStatus === "Completed" && completedLog) {
+            badgeText = "Completed";
+            badgeClass = badgeColors.Completed;
+          } else if (log) {
+            if (log.status === "Rejected") {
+              badgeText = "Rejected";
+              badgeClass = badgeColors.Rejected;
+            } else {
+              badgeText = "Approved";
+              badgeClass = badgeColors.Approved;
+            }
+          }
+
           let statusIcon;
-          switch (status) {
+          switch (effectiveStatus) {
             case "Submitted":
               statusIcon = <Send className="w-5 h-5 text-gray-700" />;
               break;
@@ -166,22 +217,20 @@ const TrackingCards = ({ requestId }) => {
               statusIcon = null;
           }
 
-          const message = getStatusMessage(status, logs);
+          const message = getStatusMessage(status);
 
           return (
             <div
               key={status}
               className={`relative p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 ${colorClass} flex flex-col justify-between h-56`}
             >
-              {/* Title */}
               <div className="flex items-center gap-2 mb-3">
                 {statusIcon}
                 <h3 className="text-lg font-semibold text-gray-800">
-                  {status}
+                  {effectiveStatus}
                 </h3>
               </div>
 
-              {/* Message Section */}
               <div className="flex-grow flex items-center justify-center">
                 {message && (
                   <p className="text-sm text-gray-700 text-center leading-relaxed">
@@ -190,17 +239,15 @@ const TrackingCards = ({ requestId }) => {
                 )}
               </div>
 
-              {/* Footer Section */}
               <div className="mt-4 flex flex-col items-center gap-2">
-                {/* Date */}
-                {log && log.created_at && (
+                {(completedLog?.created_at || log?.created_at) && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
-                    {new Date(log.created_at).toLocaleDateString()}
+                    {new Date(
+                      completedLog?.created_at || log?.created_at
+                    ).toLocaleDateString()}
                   </div>
                 )}
-
-                {/* Badge */}
                 <span
                   className={`px-4 py-1 text-sm font-medium rounded-full text-center transform transition-all duration-500 hover:scale-110 ${badgeClass}`}
                 >
@@ -208,7 +255,6 @@ const TrackingCards = ({ requestId }) => {
                 </span>
               </div>
 
-              {/* Gradient line bottom */}
               <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-blue-500 rounded-b-xl"></div>
             </div>
           );

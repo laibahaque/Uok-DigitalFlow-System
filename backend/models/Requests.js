@@ -65,11 +65,27 @@ const getLogsByRequest = async (requestId) => {
   );
 
   const [reqRow] = await db.query(
-    `SELECT form_type FROM requests WHERE id = ?`,
+    `SELECT 
+       r.form_type,
+       r.sem_num,
+       r.exam_type,
+       r.course_id,
+       c.course_code,
+       c.course_name
+     FROM requests r
+     LEFT JOIN courses c ON r.course_id = c.id
+     WHERE r.id = ?`,
     [requestId]
   );
 
-  return { form_type: reqRow[0]?.form_type || "", logs };
+  return {
+    form_type: reqRow[0]?.form_type || "",
+    sem_num: reqRow[0]?.sem_num || null,
+    exam_type: reqRow[0]?.exam_type || null,
+    course_code: reqRow[0]?.course_code || null,
+    course_name: reqRow[0]?.course_name || null,
+    logs,
+  };
 };
 
 // 📌 5. Check if Regular Request Already Exists
@@ -99,7 +115,7 @@ const getMyRequestsFromModel = async (req, res) => {
          ORDER BY r.created_at DESC`,
       [userId]
     );
-    
+
     console.log("✅ Query result:", rows);
     res.status(200).json(rows);
   } catch (err) {
@@ -129,7 +145,7 @@ const checkExistingG1Request = async (loggedInUserId, semNum, courseId) => {
        WHERE student_id = ? 
          AND sem_num = ? 
          AND course_id = ? 
-         AND form_type = 'G1 Form'`,  
+         AND form_type = 'G1 Form'`,
     [studentId, semNum, courseId]
   );
 
@@ -250,6 +266,49 @@ const getFacultyAdminUser = async () => {
   );
   return rows[0] || null;
 };
+
+const autoCompleteOldRequests = async () => {
+  try {
+    // 5 din purani In Progress requests nikalna
+    const [rows] = await db.query(`
+      SELECT id, student_id, form_type, sem_num
+      FROM requests
+      WHERE status = 'In Progress'
+        AND updated_at <= NOW() - INTERVAL 5 DAY
+    `);
+
+    // Har request ko Complete karna
+    for (const r of rows) {
+      await db.query(`UPDATE requests SET status = 'Completed' WHERE id = ?`, [
+        r.id,
+      ]);
+
+      // logs insert karna
+      await db.query(
+        `INSERT INTO request_logs (request_id, status, updated_by) VALUES (?, ?, -1)`, //-1 means system
+        [r.id, "Completed", r.student_id]
+      );
+
+      // notifications insert karna
+      await db.query(
+        `INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)`,
+        [
+          r.student_id,
+          "Request Completed ✅",
+          `Your ${r.form_type} request (Semester ${r.sem_num || ""
+          }) has been completed.`,
+        ]
+      );
+    }
+
+    return rows.length; // kitni requests complete hui
+  } catch (err) {
+    console.error("❌ autoCompleteOldRequests error:", err);
+    throw err;
+  }
+};
+
+
 module.exports = {
   createFormRequest,
   createRequestLog,
@@ -265,4 +324,5 @@ module.exports = {
   getUniAdminUser,
   getFacultyAdminUser,
   checkExistingG1Request,
+  autoCompleteOldRequests,
 };

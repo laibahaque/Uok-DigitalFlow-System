@@ -14,6 +14,7 @@ const {
   getApprovedRequests,
   updateRequestByFaculty,
   updateRequestByUniAdmin,
+  autoCompleteRequests,
 } = require("../controllers/requestController");
 
 router.get("/my", verifyToken, authorizeRoles("student"), getMyRequests);
@@ -25,7 +26,7 @@ router.post("/g1", verifyToken, authorizeRoles("student"), submitG1Request);
 
 // 📌 Get logs for a request
 router.get("/:requestId/logs", verifyToken, getRequestLogs);
-
+router.post("/auto-complete", autoCompleteRequests);
 // 📌 Check duplicate Regular request
 router.post("/check-regular", verifyToken, checkDuplicateRegular);
 router.post("/check-transcript", verifyToken, checkDuplicateTranscript);

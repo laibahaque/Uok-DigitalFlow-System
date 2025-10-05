@@ -115,14 +115,16 @@ const Requests = () => {
                                     <td className="px-6 py-3">{req.course_name || "-"}</td>
                                     <td
                                         className={`px-6 py-3 font-semibold ${req.request_status === "Faculty Approved"
-                                            ? "text-green-600"
-                                            : req.request_status === "Rejected"
-                                                ? "text-red-600"
-                                                : "text-yellow-600"
+                                                ? "text-green-600"
+                                                : req.request_status === "Faculty Rejected" ||
+                                                    req.request_status === "University Rejected"
+                                                    ? "text-red-600"
+                                                    : "text-yellow-600"
                                             }`}
                                     >
                                         {req.request_status}
                                     </td>
+
                                     <td className="px-6 py-3 flex gap-2">
                                         <td className="px-6 py-3 flex gap-2">
                                             {req.request_status === "Submitted" ? (

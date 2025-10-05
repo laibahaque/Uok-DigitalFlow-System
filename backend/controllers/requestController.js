@@ -167,7 +167,7 @@ const submitTranscriptRequest = async (req, res) => {
       await createNotification(
         facultyAdmin.id,
         "New Transcript Request Submitted",
-        `A student submitted a transcript request (Delivery: ${delivery_method}).`
+        `A student submitted a transcript request.`
       );
     }
     res.status(201).json({
@@ -319,7 +319,7 @@ const updateRequestByFaculty = async (req, res) => {
     const { status } = req.body; // Approved / Rejected
     const adminId = req.user.id; // faculty admin ka id
 
-    if (!["Faculty Approved", "Rejected"].includes(status)) {
+    if (!["Faculty Approved", "Faculty Rejected"].includes(status)) {
       return res.status(400).json({ message: "❌ Invalid status" });
     }
 
@@ -366,7 +366,7 @@ const updateRequestByUniAdmin = async (req, res) => {
     const { status } = req.body;
     const adminId = req.user.id;
 
-    if (!["University Approved", "Rejected"].includes(status)) {
+    if (!["University Approved", "University Rejected"].includes(status)) {
       return res.status(400).json({ message: "❌ Invalid status" });
     }
 

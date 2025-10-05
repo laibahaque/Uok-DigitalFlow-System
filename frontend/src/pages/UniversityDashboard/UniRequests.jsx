@@ -53,7 +53,7 @@ const UniRequests = () => {
       setRequests(prev =>
         [...prev.map(r =>
           r.request_id === requestId
-            ? { ...r, request_status: status === "University Approved" ? "In Progress" : "Rejected" }
+            ? { ...r, request_status: status === "University Approved" ? "In Progress" : "University Rejected" }
             : r
         )].sort((a, b) => {
           if (a.request_status === "University Approved" && b.request_status !== "University Approved") return -1;
@@ -139,7 +139,7 @@ const UniRequests = () => {
                         </button>
                         <button
                           onClick={() =>
-                            handleStatusChange(req.request_id, "Rejected")
+                            handleStatusChange(req.request_id, "University Rejected")
                           }
                           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
                         >

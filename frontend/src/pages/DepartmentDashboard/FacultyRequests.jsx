@@ -44,21 +44,17 @@ const Requests = () => {
     // ✅ Update status function
     const handleStatusChange = async (id, status) => {
         try {
+            const user = JSON.parse(sessionStorage.getItem("user"));
+            const token = user?.token;
+
             await axios.put(
                 `http://localhost:5000/api/requests/${id}/status`,
                 { status },
-                { headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            setRequests(prev =>
-                [...prev.map(r => r.request_id === id ? { ...r, request_status: status } : r)]
-                    .sort((a, b) => {
-                        if (a.request_status === "Submitted" && b.request_status !== "Submitted") return -1;
-                        if (a.request_status !== "Submitted" && b.request_status === "Submitted") return 1;
-                        return new Date(b.created_at) - new Date(a.created_at);
-                    })
-            );
-
+            // ❗ row remove from UI
+            setRequests(prev => prev.filter(r => r.request_id !== id));
 
             toast.success(`Request ${status} successfully!`);
         } catch (err) {
@@ -66,6 +62,7 @@ const Requests = () => {
             console.error(err);
         }
     };
+
 
     if (loading)
         return (
@@ -115,11 +112,11 @@ const Requests = () => {
                                     <td className="px-6 py-3">{req.course_name || "-"}</td>
                                     <td
                                         className={`px-6 py-3 font-semibold ${req.request_status === "Faculty Approved"
-                                                ? "text-green-600"
-                                                : req.request_status === "Faculty Rejected" ||
-                                                    req.request_status === "University Rejected"
-                                                    ? "text-red-600"
-                                                    : "text-yellow-600"
+                                            ? "text-green-600"
+                                            : req.request_status === "Faculty Rejected" ||
+                                                req.request_status === "University Rejected"
+                                                ? "text-red-600"
+                                                : "text-yellow-600"
                                             }`}
                                     >
                                         {req.request_status}
@@ -135,6 +132,7 @@ const Requests = () => {
                                                     >
                                                         Accept
                                                     </button>
+
                                                     <button
                                                         onClick={() => handleStatusChange(req.request_id, "Faculty Rejected")}
                                                         className="px-3 py-1 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white"
@@ -142,22 +140,16 @@ const Requests = () => {
                                                         Reject
                                                     </button>
                                                 </>
-                                            ) : req.request_status === "Faculty Approved" ? (
-                                                <button
-                                                    disabled
-                                                    className="px-3 py-1 rounded-lg text-sm bg-green-300 cursor-not-allowed text-white"
-                                                >
-                                                    Accepted
-                                                </button>
                                             ) : (
                                                 <button
                                                     disabled
-                                                    className="px-3 py-1 rounded-lg text-sm bg-red-300 cursor-not-allowed text-white"
+                                                    className="px-3 py-1 rounded-lg text-sm bg-gray-300 cursor-not-allowed text-white"
                                                 >
-                                                    Rejected
+                                                    Processed
                                                 </button>
                                             )}
                                         </td>
+
 
                                     </td>
                                 </tr>

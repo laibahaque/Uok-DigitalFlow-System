@@ -50,17 +50,8 @@ const UniRequests = () => {
       );
 
       // UI update: set In Progress or Rejected
-      setRequests(prev =>
-        [...prev.map(r =>
-          r.request_id === requestId
-            ? { ...r, request_status: status === "University Approved" ? "In Progress" : "University Rejected" }
-            : r
-        )].sort((a, b) => {
-          if (a.request_status === "University Approved" && b.request_status !== "University Approved") return -1;
-          if (a.request_status !== "University Approved" && b.request_status === "University Approved") return 1;
-          return new Date(b.created_at) - new Date(a.created_at);
-        })
-      );
+      setRequests(prev => prev.filter(r => r.request_id !== requestId));
+
 
       toast.success(
         status === "University Approved"
@@ -84,7 +75,7 @@ const UniRequests = () => {
     <div className="p-6">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3 flex items-center gap-3">
         <ClipboardCheck className="w-7 h-7 text-green-600" /> {/* ← lucide icon */}
-         All Requests
+        All Requests
       </h2>
       {requests.length === 0 ? (
         <p className="text-gray-600 text-center py-6 text-lg">
@@ -118,49 +109,32 @@ const UniRequests = () => {
                   <td className="px-6 py-3">{req.sem_num || "-"}</td>
                   <td
                     className={`px-6 py-3 font-semibold ${req.request_status === "In Progress"
-                        ? "text-blue-600"
-                        : req.request_status === "Rejected"
-                          ? "text-red-600"
-                          : "text-green-600"
+                      ? "text-blue-600"
+                      : req.request_status === "Rejected"
+                        ? "text-red-600"
+                        : "text-green-600"
                       }`}
                   >
                     {req.request_status}
                   </td>
                   <td className="px-6 py-3 flex gap-2">
-                    {req.request_status === "Faculty Approved" ? (
+                    {req.form_type !== "G1 Form" && req.request_status === "Faculty Approved" && (
                       <>
                         <button
-                          onClick={() =>
-                            handleStatusChange(req.request_id, "University Approved")
-                          }
+                          onClick={() => handleStatusChange(req.request_id, "University Approved")}
                           className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg"
                         >
                           Accept
                         </button>
                         <button
-                          onClick={() =>
-                            handleStatusChange(req.request_id, "University Rejected")
-                          }
+                          onClick={() => handleStatusChange(req.request_id, "University Rejected")}
                           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
                         >
                           Reject
                         </button>
                       </>
-                    ) : req.request_status === "In Progress" ? (
-                      <button
-                        disabled
-                        className="bg-blue-300 text-white px-3 py-1 rounded-lg cursor-not-allowed"
-                      >
-                        Accepted
-                      </button>
-                    ) : (
-                      <button
-                        disabled
-                        className="bg-red-300 text-white px-3 py-1 rounded-lg cursor-not-allowed"
-                      >
-                        Rejected
-                      </button>
                     )}
+
                   </td>
                 </tr>
               ))}

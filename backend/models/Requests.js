@@ -182,20 +182,18 @@ const getSubmittedRequestsFromModel = async () => {
   }
 };
 
-
-const getApprovedRequestsFromModel = async (formType = null) => {
+const getApprovedRequestsFromModel = async () => {
   try {
-    let query = `
+    const [rows] = await db.execute(`
       SELECT 
           r.id AS request_id,
           r.form_type,
           r.sem_num,
           r.exam_type,
-          c.course_code AS course_code,
-          c.course_name AS course_name,
+          c.course_code,
+          c.course_name,
           r.status AS request_status,
           r.created_at,
-          s.id AS student_id,
           s.seat_no,
           s.program,
           d.depart_name AS department_name
@@ -203,33 +201,42 @@ const getApprovedRequestsFromModel = async (formType = null) => {
       JOIN students s ON r.student_id = s.id
       JOIN departments_sci d ON s.depart_id = d.id
       LEFT JOIN courses c ON r.course_id = c.id
-      WHERE r.status IN ('Faculty Approved','In Progress')
-        AND r.form_type != 'G1 Form'
-    `;
+      WHERE r.status = 'Faculty Approved'
+      ORDER BY r.created_at DESC
+    `);
 
-    const params = [];
-    if (formType) {
-      query += " AND r.form_type = ?";
-      params.push(formType);
-    }
-
-    query += " ORDER BY r.created_at DESC";
-
-    const [rows] = await db.execute(query, params);
     return rows;
   } catch (err) {
     console.error("❌ DB Error in getApprovedRequestsFromModel:", err);
     throw err;
   }
 };
+
 // 📌 Update Request Status (Faculty Admin Accept/Reject)
 const updateRequestStatusInModel = async (requestId, status) => {
+  let finalStatus = status;
+
+  // 🔥 Special Case: If G1 Form and Faculty Approves → Move to "In Progress"
+  if (status === "Faculty Approved") {
+    const [formRow] = await db.execute(
+      `SELECT form_type FROM requests WHERE id = ?`,
+      [requestId]
+    );
+
+    // formType check
+    if (formRow.length > 0 && formRow[0].form_type === "G1 Form") {
+      finalStatus = "In Progress";
+    }
+  }
+
   const [result] = await db.execute(
-    `UPDATE requests SET status = ?, updated_at = NOW() WHERE id = ?`,
-    [status, requestId]
+    `UPDATE requests SET status = ?, updated_at=NOW() WHERE id = ?`,
+    [finalStatus, requestId]
   );
+
   return result;
 };
+
 // 📌 Get single request by ID
 const getRequestById = async (requestId) => {
   const [rows] = await db.execute(
@@ -266,48 +273,70 @@ const getFacultyAdminUser = async () => {
   );
   return rows[0] || null;
 };
-
 const autoCompleteOldRequests = async () => {
   try {
-    // 5 din purani In Progress requests nikalna
-    const [rows] = await db.query(`
-      SELECT id, student_id, form_type, sem_num
+    // 1) fetch candidate rows for logging/debugging (optional but helpful)
+    const [candidates] = await db.query(`
+      SELECT id, student_id, form_type, sem_num, updated_at
       FROM requests
       WHERE status = 'In Progress'
-        AND updated_at <= NOW() - INTERVAL 5 DAY
+        AND updated_at <= NOW() - INTERVAL 5 MINUTE
     `);
 
-    // Har request ko Complete karna
-    for (const r of rows) {
-      await db.query(`UPDATE requests SET status = 'Completed' WHERE id = ?`, [
-        r.id,
-      ]);
+    console.log(`[autoComplete] candidates found: ${candidates.length}`);
+    candidates.forEach(c => console.log(`  id=${c.id}, updated_at=${c.updated_at}`));
 
-      // logs insert karna
-      await db.query(
-        `INSERT INTO request_logs (request_id, status, updated_by) VALUES (?, ?, -1)`, //-1 means system
-        [r.id, "Completed", r.student_id]
+    for (const r of candidates) {
+      // 2) Do an atomic update: update only if still In Progress AND still older than 5 minutes
+      const [updateResult] = await db.query(
+        `UPDATE requests
+         SET status = 'Completed', updated_at = NOW()
+         WHERE id = ? 
+           AND status = 'In Progress'
+           AND updated_at <= NOW() - INTERVAL 5 MINUTE`,
+        [r.id]
       );
 
-      // notifications insert karna
+      // If nobody updated (0 rows), skip creating logs/notifications
+      if (updateResult.affectedRows === 0) {
+        console.log(`[autoComplete] skipped id=${r.id} (condition not met at update time)`);
+        continue;
+      }
+
+      console.log(`[autoComplete] completed id=${r.id}`);
+
+      // 3) Insert completed log if not exists (safe to keep)
+      const [logExists] = await db.query(
+        `SELECT id FROM request_logs WHERE request_id = ? AND status = 'Completed'`,
+        [r.id]
+      );
+      if (logExists.length === 0) {
+        console.log(`[autoComplete] inserting log for request ${r.id} with updated_by = NULL`);
+        await db.query(
+          `INSERT INTO request_logs (request_id, status, updated_by, created_at)
+           VALUES (?, 'Completed', NULL, NOW())`,
+          [r.id]
+        );
+      }
+
+      // 4) Notification
       await db.query(
-        `INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)`,
+        `INSERT INTO notifications (user_id, title, message)
+         VALUES ((SELECT user_id FROM students WHERE id = ?), ?, ?)`,
         [
           r.student_id,
           "Request Completed ✅",
-          `Your ${r.form_type} request (Semester ${r.sem_num || ""
-          }) has been completed.`,
+          `Your ${r.form_type} request (Semester ${r.sem_num || ""}) has been completed.`,
         ]
       );
     }
 
-    return rows.length; // kitni requests complete hui
+    return candidates.length;
   } catch (err) {
     console.error("❌ autoCompleteOldRequests error:", err);
     throw err;
   }
 };
-
 
 module.exports = {
   createFormRequest,
